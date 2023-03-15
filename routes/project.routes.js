@@ -16,7 +16,6 @@ router.get("/", getProjects);
 router.put("/:id", updateProject);
 router.delete("/:id", deleteProject);
 router.get("/:id", getProject);
-
 router.get("/:id/tasks", getProjectTasks);
 
 export default router;
