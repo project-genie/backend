@@ -42,6 +42,7 @@ export async function deleteOrganization(req, res) {
     const organization = await Organization.findByPk(organizationId);
     if (!organization) {
       return res.status(404).json({
+        success: false,
         message: "Organization not found",
       });
     }
