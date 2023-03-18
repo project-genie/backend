@@ -1,20 +1,24 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/db.config.js";
 import { User } from "./user.model.js";
-import { Project } from "./project.model.js";
+import { Task } from "./task.model.js";
 
-// organizations
-export const Organization = sequelize.define(
-  "organizations",
+// projects
+export const Project = sequelize.define(
+  "projects",
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
+    organizationId: {
+      type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter organization id." },
+    },
     name: {
       type: DataTypes.STRING,
-      allowNull: { args: false, msg: "Please enter organization name." },
+      allowNull: { args: false, msg: "Please enter project name." },
     },
     description: {
       type: DataTypes.STRING,
@@ -25,16 +29,16 @@ export const Organization = sequelize.define(
   }
 );
 
-// organization_members
-export const OrganizationMembers = sequelize.define("organization_members", {
+// project_members
+export const ProjectMembers = sequelize.define("project_members", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
   },
-  organizationId: {
+  projectId: {
     type: DataTypes.INTEGER,
-    allowNull: { args: false, msg: "Please enter organization id." },
+    allowNull: { args: false, msg: "Please enter project id." },
   },
   userId: {
     type: DataTypes.INTEGER,
@@ -47,22 +51,22 @@ export const OrganizationMembers = sequelize.define("organization_members", {
 });
 
 // Relationships
-Organization.hasMany(OrganizationMembers, {
-  foreignkey: "organizationId",
+Project.hasMany(ProjectMembers, {
+  foreignkey: "projectId",
   sourceKey: "id",
 });
 
-Organization.hasMany(Project, {
-  foreignkey: "organizationId",
+Project.hasMany(Task, {
+  foreignkey: "projectId",
   sourceKey: "id",
 });
 
-OrganizationMembers.belongsTo(Organization, {
-  foreignKey: "organizationId",
+ProjectMembers.belongsTo(Project, {
+  foreignKey: "projectId",
   targetKey: "id",
 });
 
-OrganizationMembers.belongsTo(User, {
+ProjectMembers.belongsTo(User, {
   foreignKey: "userId",
   targetKey: "id",
 });
