@@ -9,7 +9,7 @@ export default function deserializeUser(req, res, next) {
   }
   const { payload: user, expired } = verifyJWT(accessToken);
 
-  if (user && !expired) {
+  if (user) {
     req.user = user;
     return next();
   }
