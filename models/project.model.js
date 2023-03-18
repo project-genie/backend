@@ -13,23 +13,20 @@ export const Project = sequelize.define(
     name: {
       type: DataTypes.STRING,
     },
-    priority: {
-      type: DataTypes.INTEGER,
-    },
     description: {
       type: DataTypes.STRING,
     },
-    deliverydate: {
+    deliveryDate: {
       type: DataTypes.DATE,
-    }
+    },
   },
   {
-    timestamps: false,
+    timestamps: true,
   }
 );
 
 Project.hasMany(Task, {
-  foreinkey: "projectId",
+  foreignkey: "projectId",
   sourceKey: "id",
 });
 
