@@ -15,20 +15,14 @@ export async function getProjects(req, res) {
 }
 
 export async function createProject(req, res) {
-  const { name, priority, description, deliveryDate } = req.body;
+  const { name, description, deliveryDate } = req.body;
   console.log(req.body);
   try {
-    let newProject = await Project.create(
-      {
-        name,
-        priority,
-        description,
-        deliverydate: new Date(deliveryDate).getTime(),
-      },
-      {
-        fields: ["name", "priority", "description", "deliverydate"],
-      }
-    );
+    let newProject = await Project.create({
+      name,
+      description,
+      deliveryDate: new Date(deliveryDate).getTime(),
+    });
     return res.json(newProject);
   } catch (error) {
     res.status(500).json({

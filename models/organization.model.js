@@ -1,8 +1,9 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/db.config.js";
+import { Project } from "./project.model.js";
 
-export const Task = sequelize.define(
-  "task",
+export const Organization = sequelize.define(
+  "organizations",
   {
     id: {
       type: DataTypes.INTEGER,
@@ -11,13 +12,18 @@ export const Task = sequelize.define(
     },
     name: {
       type: DataTypes.STRING,
+      allowNull: false,
     },
-    done: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
+    description: {
+      type: DataTypes.STRING,
     },
   },
   {
     timestamps: true,
   }
 );
+
+Organization.hasMany(Project, {
+  foreignkey: "organizationId",
+  sourceKey: "id",
+});

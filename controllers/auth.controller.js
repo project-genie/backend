@@ -1,4 +1,3 @@
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { User } from "../models/user.model.js";
 import { Session } from "../models/session.model.js";
@@ -37,14 +36,14 @@ export async function createSession(req, res) {
   // create access token
   const accessToken = signJWT(
     { email: user.email, name: user.name, sessionId: session.id },
-    "15m"
+    "4h"
   );
 
   const refreshToken = signJWT({ sessionId: session.id }, "1y");
 
   // set access token in cookie
   res.cookie("accessToken", accessToken, {
-    maxAge: 300000, // 5 minutes
+    maxAge: 14400000, // 5 minutes
     httpOnly: true,
   });
 
@@ -57,14 +56,18 @@ export async function createSession(req, res) {
   return res.send(session);
 }
 
-export async function getSession(req, res) {
+export async function getSession(sessionId) {
   const session = Session.findOne({
     where: {
-      sessionId: req.user.sessionId,
+      sessionId: sessionId,
     },
   });
 
   return session && session.valid ? session : null;
+}
+
+export async function getSessionHandler(req, res) {
+  return res.send(req.user);
 }
 
 // log out handler

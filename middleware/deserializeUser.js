@@ -7,17 +7,14 @@ export default function deserializeUser(req, res, next) {
   if (!accessToken) {
     return next();
   }
+  const { payload: user, expired } = verifyJWT(accessToken);
 
-  const { payload, expired } = verifyJWT(accessToken);
-
-  // For a valid access token
-  if (payload) {
-    req.user = payload;
+  if (user && !expired) {
+    req.user = user;
     return next();
   }
 
   // expired but valid access token
-
   const { payload: refresh } =
     expired && refreshToken ? verifyJWT(refreshToken) : { payload: null };
 
@@ -34,7 +31,7 @@ export default function deserializeUser(req, res, next) {
   const newAccessToken = signJWT(session, "15m");
 
   res.cookie("accessToken", newAccessToken, {
-    maxAge: 300000, // 5 minutes
+    maxAge: 900000, // 15 minutes
     httpOnly: true,
   });
 
