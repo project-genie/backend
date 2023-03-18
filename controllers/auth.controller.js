@@ -5,14 +5,19 @@ import { signJWT } from "../utils/jwt.utils.js";
 
 export async function signUp(req, res) {
   try {
-    User.create({
+    await User.create({
       name: req.body.name,
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, 8),
     });
-    res.status(201).send({ message: "User is successfully created." });
+    res
+      .status(201)
+      .send({ success: true, message: "User is successfully created." });
   } catch (error) {
-    res.status(500).send({ message: error.message });
+    res.status(500).send({
+      success: false,
+      message: error.message || "Some error occurred while creating the User.",
+    });
   }
 }
 
@@ -26,7 +31,9 @@ export async function createSession(req, res) {
   });
 
   if (!user || bcrypt.compareSync(password, user.password) === false) {
-    return res.status(401).send("Invalid email or password");
+    return res
+      .status(401)
+      .send({ success: false, message: "Invalid email or password" });
   }
 
   const session = await Session.create({
@@ -35,7 +42,7 @@ export async function createSession(req, res) {
 
   // create access token
   const accessToken = signJWT(
-    { email: user.email, name: user.name, sessionId: session.id },
+    { id: user.id, email: user.email, name: user.name, sessionId: session.id },
     "4h"
   );
 
@@ -43,12 +50,12 @@ export async function createSession(req, res) {
 
   // set access token in cookie
   res.cookie("accessToken", accessToken, {
-    maxAge: 14400000, // 5 minutes
+    maxAge: 900000, // 15 minutes
     httpOnly: true,
   });
 
   res.cookie("refreshToken", refreshToken, {
-    maxAge: 3.154e10, // 1 year
+    maxAge: 3.6e6, // 1 hour
     httpOnly: true,
   });
 
