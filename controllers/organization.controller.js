@@ -5,6 +5,8 @@ import {
 } from "../models/organization.model.js";
 import { User } from "../models/user.model.js";
 import { v4 as uuidv4 } from "uuid";
+import sgMail from "@sendgrid/mail";
+import envConfig from "../config/env.config.js";
 
 export async function createOrganization(req, res) {
   const { name, description } = req.body;
@@ -209,6 +211,36 @@ export async function inviteUserToOrganization(req, res) {
       userId: user.id,
       secret: secret,
     });
+
+    sgMail.setApiKey(envConfig.SENDGRID_KEY);
+
+    // Send Mail with the link to continue.
+    const msg = {
+      to: req.body.email, // Change to your recipient
+      from: "mertplayschess@outlook.com", // Change to your verified sender
+      subject: "Project Genie Organization Invitation",
+      text:
+        "Someone invited you to their organization! See the link below to accept or reject the organization: \n" +
+        "http://localhost:3000/organizations/invite?secret=" +
+        secret +
+        "&email=" +
+        req.body.email,
+      html:
+        "Someone invited you to their organization! See the link below to accept or reject the organization: \n" +
+        "http://localhost:3000/organizations/invite?secret=" +
+        secret +
+        "&email=" +
+        req.body.email,
+    };
+
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+      })
+      .catch((error) => {
+        console.error(error);
+      });
 
     return res.json({
       success: true,
