@@ -1,12 +1,30 @@
 import { Project, ProjectMembers } from "../models/project.model.js";
 import { User } from "../models/user.model.js";
-import { Organization } from "../models/organization.model.js";
+import {
+  Organization,
+  OrganizationMembers,
+} from "../models/organization.model.js";
 
 // Create a new project.
 export async function createProject(req, res) {
   const { name, description, organizationId } = req.body;
-
+  const userId = req.user.id;
   try {
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
     // Check if the organization exists.
     const organization = await Organization.findByPk(organizationId);
     if (!organization) {
@@ -44,7 +62,23 @@ export async function createProject(req, res) {
 // Delete a project.
 export async function deleteProject(req, res) {
   const projectId = req.params["id"];
+  const userId = req.user.id;
   try {
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
     // Find the project by primary key.
     const project = await Project.findByPk(projectId);
     if (!project) {
@@ -71,6 +105,7 @@ export async function deleteProject(req, res) {
 export async function updateProject(req, res) {
   // Get the project name and description from the request body.
   const { name, description } = req.body;
+  const userId = req.user.id;
 
   // Get the project id from the request parameters.
   const projectId = req.params["id"];
@@ -84,6 +119,21 @@ export async function updateProject(req, res) {
         message: "Project not found",
       });
     }
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId: project.organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
     await project.update({
       name,
       description,
@@ -131,7 +181,23 @@ export async function getProjectsCurrentUser(req, res) {
 // Get all projects of an organization.
 export async function getProjectsOrganization(req, res) {
   const organizationId = req.params["id"];
+  const userId = req.user.id;
   try {
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember) {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
     const projects = await Project.findAll({
       where: {
         organizationId,
@@ -153,7 +219,31 @@ export async function getProjectsOrganization(req, res) {
 // Get all members of a project.
 export async function getProjectMembers(req, res) {
   const projectId = req.params["id"];
+  const userId = req.user.id;
   try {
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId: project.organizationId,
+      },
+    });
+
+    if (!organizationMember) {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
     const members = await ProjectMembers.findAll({
       where: {
         projectId,
