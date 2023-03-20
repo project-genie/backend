@@ -5,8 +5,23 @@ import { Organization } from "../models/organization.model.js";
 // Create a new project.
 export async function createProject(req, res) {
   const { name, description, organizationId } = req.body;
-
+  const userId = req.user.id;
   try {
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
     // Check if the organization exists.
     const organization = await Organization.findByPk(organizationId);
     if (!organization) {
