@@ -35,6 +35,8 @@ export async function signUp(req, res) {
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, 8),
     });
+
+    await userCandidate.destroy();
     res
       .status(201)
       .send({ success: true, message: "User is successfully created." });
