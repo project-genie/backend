@@ -59,7 +59,23 @@ export async function createProject(req, res) {
 // Delete a project.
 export async function deleteProject(req, res) {
   const projectId = req.params["id"];
+  const userId = req.user.id;
   try {
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
     // Find the project by primary key.
     const project = await Project.findByPk(projectId);
     if (!project) {
