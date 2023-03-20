@@ -41,7 +41,23 @@ export async function createOrganization(req, res) {
 
 export async function deleteOrganization(req, res) {
   const organizationId = req.params["id"];
+  const userId = req.user.id;
   try {
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
     // Find the organization by primary key.
     const organization = await Organization.findByPk(organizationId);
     if (!organization) {
@@ -66,10 +82,25 @@ export async function deleteOrganization(req, res) {
 export async function updateOrganization(req, res) {
   // Get the name and description from the request body.
   const { name, description } = req.body;
-
+  const userId = req.user.id;
   // Get the organization id from the request parameters.
   const organizationId = req.params["id"];
   try {
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
     // Find the organization by primary key.
     const organization = await Organization.findByPk(organizationId);
     if (!organization) {
