@@ -8,5 +8,5 @@ export default {
   DB_PASSWORD: process.env.DB_PASSWORD,
   DB_HOST: process.env.DB_HOST,
   PRIVATE_KEY: process.env.PRIVATE_KEY,
-  PUBLIC_KEY: process.env.PUBLIC_KEY,
+  SENDGRID_KEY: process.env.SENDGRID_KEY,
 };
