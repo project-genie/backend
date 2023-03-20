@@ -30,3 +30,33 @@ export const User = sequelize.define(
     timestamps: true,
   }
 );
+
+export const UserCandidate = sequelize.define(
+  "user_candidates",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: { args: false, msg: "Please enter your email address." },
+      validate: {
+        isEmail: { args: true, msg: "Please enter a valid email address." },
+      },
+    },
+    secret: {
+      type: DataTypes.STRING,
+      allowNull: { args: false, msg: "Please enter your secret." },
+    },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: { args: false, msg: "Please enter your status." },
+      defaultValue: "pending",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
