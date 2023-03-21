@@ -300,3 +300,176 @@ export async function getProjectMembers(req, res) {
     });
   }
 }
+
+/*
+ * Add a member to a project.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can add members to a project.
+ */
+export async function addProjectMember(req, res) {
+  const { userId, role } = req.body;
+  const projectId = req.params["id"];
+  const currentUserId = req.user.id;
+  try {
+    // Authorization check
+    const project = await Project.findByPk(projectId);
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId: currentUserId,
+        organizationId: project.organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId,
+      },
+    });
+
+    if (projectMember) {
+      return res.status(400).json({
+        success: false,
+        message: "User is already a member of the project",
+      });
+    }
+
+    await ProjectMembers.create({
+      userId,
+      projectId,
+      role,
+    });
+
+    return res.json({
+      success: true,
+      message: "Project member added successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+/*
+ * Remove a member from a project.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can remove members from a project.
+ */
+export async function removeProjectMember(req, res) {
+  const { userId } = req.body;
+  const projectId = req.params["id"];
+  const currentUserId = req.user.id;
+  try {
+    const project = await Project.findByPk(projectId);
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId: currentUserId,
+        organizationId: project.organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId,
+      },
+    });
+
+    if (!projectMember) {
+      return res.status(400).json({
+        success: false,
+        message: "User is not a member of the project",
+      });
+    }
+
+    await projectMember.destroy();
+
+    return res.json({
+      success: true,
+      message: "Project member removed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+/*
+ * Update a project member.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can update a project member. The role can be updated.
+ */
+export async function updateProjectMember(req, res) {
+  const { userId, role } = req.body;
+  const projectId = req.params["id"];
+  const currentUserId = req.user.id;
+  try {
+    // Authorization check
+    const project = await Project.findByPk(projectId);
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId: currentUserId,
+        organizationId: project.organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId,
+      },
+    });
+
+    if (!projectMember) {
+      return res.status(400).json({
+        success: false,
+        message: "User is not a member of the project.",
+      });
+    }
+
+    await projectMember.update({
+      role,
+    });
+
+    return res.json({
+      success: true,
+      message: "Project member updated successfully.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}

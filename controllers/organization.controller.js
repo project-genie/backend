@@ -425,3 +425,138 @@ export async function rejectInvitation(req, res) {
     });
   }
 }
+
+/*
+ * Remove a member from an organization.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can remove a member from the organization.
+ * The owner cannot remove themselves from the organization.
+ * The owner cannot remove another owner from the organization.
+ * The owner cannot remove the last owner from the organization.
+ */
+export async function removeOrganizationMember(req, res) {
+  const organizationId = req.params["id"];
+  const { userId } = req.body;
+  const currentUserId = req.user.id;
+
+  try {
+    // Authorization check.
+    const currentUser = await OrganizationMembers.findOne({
+      where: {
+        organizationId,
+        userId: currentUserId,
+      },
+    });
+
+    if (!currentUser || currentUser.role !== "owner") {
+      return res.status(401).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    // Check if the user is a member of the organization.
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        organizationId,
+        userId,
+      },
+    });
+
+    // If user is not a member, return error.
+    if (!organizationMember) {
+      return res.status(400).json({
+        success: false,
+        message: "User is not a member of the organization",
+      });
+    }
+
+    // Check if the user is the owner of the organization.
+    if (organizationMember.role === "owner") {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot remove an owner of the organization.",
+      });
+    }
+
+    // Check if the user is the last owner of the organization.
+    const owners = await OrganizationMembers.findAll({
+      where: {
+        organizationId,
+        role: "owner",
+      },
+    });
+
+    if (owners.length === 1) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot remove the last owner of the organization.",
+      });
+    }
+
+    await organizationMember.destroy();
+
+    return res.json({
+      success: true,
+      message: "User removed from the organization successfully.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+/*
+ * Update a member's role in an organization.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can update a member's role in the organization.
+ */
+export async function updateOrganizationMember(req, res) {
+  const organizationId = req.params["id"];
+  const { userId, role } = req.body;
+  const currentUserId = req.user.id;
+  try {
+    const currentUser = await OrganizationMembers.findOne({
+      where: {
+        organizationId,
+        userId: currentUserId,
+      },
+    });
+
+    if (!currentUser || currentUser.role !== "owner") {
+      return res.status(401).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        organizationId,
+        userId,
+      },
+    });
+
+    if (!organizationMember) {
+      return res.status(400).json({
+        success: false,
+        message: "User is not a member of the organization",
+      });
+    }
+
+    await organizationMember.update({
+      role,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
