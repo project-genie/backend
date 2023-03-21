@@ -5,7 +5,13 @@ import {
   OrganizationMembers,
 } from "../models/organization.model.js";
 
-// Create a new project.
+/*
+ * Create a project.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can create projects.
+ */
 export async function createProject(req, res) {
   const { name, description, organizationId } = req.body;
   const userId = req.user.id;
@@ -59,26 +65,17 @@ export async function createProject(req, res) {
   }
 }
 
-// Delete a project.
+/*
+ * Delete a project.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can delete projects.
+ */
 export async function deleteProject(req, res) {
   const projectId = req.params["id"];
   const userId = req.user.id;
   try {
-    // Authorization check
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId,
-      },
-    });
-
-    if (!organizationMember || organizationMember.role !== "owner") {
-      return res.status(403).json({
-        success: false,
-        message: "You are unauthorized.",
-      });
-    }
-
     // Find the project by primary key.
     const project = await Project.findByPk(projectId);
     if (!project) {
@@ -87,6 +84,22 @@ export async function deleteProject(req, res) {
         message: "Project not found",
       });
     }
+
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId: project.organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
     // Delete the project.
     await project.destroy();
     return res.json({
@@ -101,7 +114,13 @@ export async function deleteProject(req, res) {
   }
 }
 
-// Update a project.
+/*
+ * Update the project.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can update projects.
+ */
 export async function updateProject(req, res) {
   // Get the project name and description from the request body.
   const { name, description } = req.body;
@@ -130,7 +149,7 @@ export async function updateProject(req, res) {
     if (!organizationMember || organizationMember.role !== "owner") {
       return res.status(403).json({
         success: false,
-        message: "You are unauthorized.",
+        message: "You are unauthorized to perform this action.",
       });
     }
 
@@ -152,7 +171,12 @@ export async function updateProject(req, res) {
   }
 }
 
-// Get all projects of the current user.
+/*
+ * Get current user projects.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ */
 export async function getProjectsCurrentUser(req, res) {
   const userId = req.user.id;
   try {
@@ -161,8 +185,8 @@ export async function getProjectsCurrentUser(req, res) {
         userId,
       },
       include: {
-        model: User,
-        attributes: ["id", "name", "email"],
+        model: Project,
+        attributes: ["id", "name", "description", "organizationId"],
       },
     });
     return res.json({
@@ -178,7 +202,13 @@ export async function getProjectsCurrentUser(req, res) {
   }
 }
 
-// Get all projects of an organization.
+/*
+ * Get all projects of an organization.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can get all projects of the organization.
+ */
 export async function getProjectsOrganization(req, res) {
   const organizationId = req.params["id"];
   const userId = req.user.id;
@@ -191,10 +221,10 @@ export async function getProjectsOrganization(req, res) {
       },
     });
 
-    if (!organizationMember) {
+    if (!organizationMember || organizationMember.role !== "owner") {
       return res.status(403).json({
         success: false,
-        message: "You are unauthorized.",
+        message: "You are unauthorized to perform this action.",
       });
     }
 
@@ -216,31 +246,36 @@ export async function getProjectsOrganization(req, res) {
   }
 }
 
-// Get all members of a project.
+/*
+ * Get project members.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization and project members can get all members of the project.
+ */
 export async function getProjectMembers(req, res) {
   const projectId = req.params["id"];
   const userId = req.user.id;
   try {
-    const project = await Project.findByPk(projectId);
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
-    }
-
     // Authorization check
+    const project = await Project.findByPk(projectId);
     const organizationMember = await OrganizationMembers.findOne({
       where: {
         userId,
         organizationId: project.organizationId,
       },
     });
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId,
+      },
+    });
 
-    if (!organizationMember) {
+    if (!projectMember && organizationMember.role !== "owner") {
       return res.status(403).json({
         success: false,
-        message: "You are unauthorized.",
+        message: "You are unauthorized to perform this action.",
       });
     }
 
@@ -257,6 +292,179 @@ export async function getProjectMembers(req, res) {
       success: true,
       message: "Project members fetched successfully",
       data: members,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+/*
+ * Add a member to a project.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can add members to a project.
+ */
+export async function addProjectMember(req, res) {
+  const { userId, role } = req.body;
+  const projectId = req.params["id"];
+  const currentUserId = req.user.id;
+  try {
+    // Authorization check
+    const project = await Project.findByPk(projectId);
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId: currentUserId,
+        organizationId: project.organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId,
+      },
+    });
+
+    if (projectMember) {
+      return res.status(400).json({
+        success: false,
+        message: "User is already a member of the project",
+      });
+    }
+
+    await ProjectMembers.create({
+      userId,
+      projectId,
+      role,
+    });
+
+    return res.json({
+      success: true,
+      message: "Project member added successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+/*
+ * Remove a member from a project.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can remove members from a project.
+ */
+export async function removeProjectMember(req, res) {
+  const { userId } = req.body;
+  const projectId = req.params["id"];
+  const currentUserId = req.user.id;
+  try {
+    const project = await Project.findByPk(projectId);
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId: currentUserId,
+        organizationId: project.organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId,
+      },
+    });
+
+    if (!projectMember) {
+      return res.status(400).json({
+        success: false,
+        message: "User is not a member of the project",
+      });
+    }
+
+    await projectMember.destroy();
+
+    return res.json({
+      success: true,
+      message: "Project member removed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+/*
+ * Update a project member.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can update a project member. The role can be updated.
+ */
+export async function updateProjectMember(req, res) {
+  const { userId, role } = req.body;
+  const projectId = req.params["id"];
+  const currentUserId = req.user.id;
+  try {
+    // Authorization check
+    const project = await Project.findByPk(projectId);
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId: currentUserId,
+        organizationId: project.organizationId,
+      },
+    });
+
+    if (!organizationMember || organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId,
+      },
+    });
+
+    if (!projectMember) {
+      return res.status(400).json({
+        success: false,
+        message: "User is not a member of the project.",
+      });
+    }
+
+    await projectMember.update({
+      role,
+    });
+
+    return res.json({
+      success: true,
+      message: "Project member updated successfully.",
     });
   } catch (error) {
     res.status(500).json({
