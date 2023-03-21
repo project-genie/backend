@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/db.config.js";
 import { User } from "./user.model.js";
+import { Project } from "./project.model.js";
 
 // tasks
 export const Task = sequelize.define(
@@ -10,6 +11,10 @@ export const Task = sequelize.define(
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
+    },
+    createdBy: {
+      type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter created by." },
     },
     projectId: {
       type: DataTypes.INTEGER,
@@ -25,6 +30,11 @@ export const Task = sequelize.define(
     },
     description: {
       type: DataTypes.STRING,
+    },
+    exception: {
+      type: DataTypes.BOOLEAN,
+      allowNull: { args: false, msg: "Please enter task exception." },
+      defaultValue: false,
     },
     status: {
       type: DataTypes.ENUM("backlog", "todo", "in-progress", "done"),
@@ -54,5 +64,15 @@ export const Task = sequelize.define(
 // Relationships
 Task.belongsTo(User, {
   foreignKey: "assigneeId",
+  targetKey: "id",
+});
+
+Task.belongsTo(User, {
+  foreignKey: "createdBy",
+  targetKey: "id",
+});
+
+Task.belongsTo(Project, {
+  foreignKey: "projectId",
   targetKey: "id",
 });
