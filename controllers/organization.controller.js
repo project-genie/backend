@@ -8,6 +8,12 @@ import { v4 as uuidv4 } from "uuid";
 import sgMail from "@sendgrid/mail";
 import envConfig from "../config/env.config.js";
 
+/*
+ * Create an organization.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ */
 export async function createOrganization(req, res) {
   const { name, description } = req.body;
   try {
@@ -39,6 +45,14 @@ export async function createOrganization(req, res) {
   }
 }
 
+/*
+  * Delete an organization.
+  * @param {Request} req
+  * @param {Response} res
+  * @returns {Promise<Response>}
+  * Only the 'owner' of the organization can delete the organization.
+  TODO: Add mail approval for deleting the organization.
+*/
 export async function deleteOrganization(req, res) {
   const organizationId = req.params["id"];
   const userId = req.user.id;
@@ -79,6 +93,13 @@ export async function deleteOrganization(req, res) {
   }
 }
 
+/*
+ * Update an organization.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can update the organization.
+ */
 export async function updateOrganization(req, res) {
   // Get the name and description from the request body.
   const { name, description } = req.body;
@@ -126,7 +147,13 @@ export async function updateOrganization(req, res) {
   }
 }
 
-// Get current user's organizations. Use organization_members table.
+/*
+ * Get organizations.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Get current user's all organizations.
+ */
 export async function getOrganizations(req, res) {
   // Get the user id from the request object.
   const userId = req.user.id;
@@ -154,10 +181,31 @@ export async function getOrganizations(req, res) {
   }
 }
 
-// Get all users of an organization. Use organization_members table.
+/*
+ * Get organization members.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Organization members can view the members of the organization.
+ */
 export async function getOrganizationMembers(req, res) {
   const organizationId = req.params["id"];
+  const userId = req.user.id;
   try {
+    // Authorization check.
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember) {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
     // Find all users where the user is a member of the organization.
     const organizationMembers = await OrganizationMembers.findAll({
       where: {
@@ -181,7 +229,13 @@ export async function getOrganizationMembers(req, res) {
   }
 }
 
-// Invite a user to an organization.
+/*
+ * Invite user to organization.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * Only the 'owner' of the organization can invite a user to the organization.
+ */
 export async function inviteUserToOrganization(req, res) {
   const { email } = req.body;
   const organizationId = req.params["id"];
@@ -286,7 +340,13 @@ export async function inviteUserToOrganization(req, res) {
   }
 }
 
-// Accept an invitation to an organization. Use organization_members table.
+/*
+ * Accept an invitation.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * User can accept an invitation to an organization.
+ */
 export async function acceptInvitation(req, res) {
   const { secret } = req.body;
   const userId = req.user.id;
@@ -326,7 +386,13 @@ export async function acceptInvitation(req, res) {
   }
 }
 
-// Reject an invitation to an organization. Use organization_members table.
+/*
+ * Reject an invitation.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * User can reject an invitation to an organization.
+ */
 export async function rejectInvitation(req, res) {
   const { secret } = req.body;
   const userId = req.user.id;
