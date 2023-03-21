@@ -7,6 +7,6 @@
 
 ### Setup Instructions
 1. Download the repository
-2. Create `.env` file in the main folder and put the variables in it: `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`.
+2. Create `.env` file in the main folder and put the variables in it. (Variable names can be found in `/config/env.config.js` file.)
 3. Install the dependencies: `npm install`
-4. Run in the development mode: `npm run dev`
+4. Run in the development mode: `npm run dev`. Make sure that postgres installation up and available.
