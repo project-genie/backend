@@ -156,6 +156,7 @@ export async function deleteTask(req, res) {
  * @param {Response} res
  * @returns {Promise<Response>}
  * Only the manager of the project, creator of the task AND the assignee of the task can update the task.
+   TODO: If status is being 'completed', we may need to perform additional actions. Such as calculating the time taken to complete the task. It will determine the performance of the assignee.
  * */
 export async function updateTask(req, res) {
   const taskId = req.params["id"];
@@ -168,6 +169,8 @@ export async function updateTask(req, res) {
     difficulty,
     assigneeId,
     projectId,
+    exception,
+    status,
   } = req.body;
 
   try {
@@ -207,6 +210,8 @@ export async function updateTask(req, res) {
       difficulty,
       assigneeId,
       projectId,
+      exception,
+      status,
     });
     return res.json({
       success: true,

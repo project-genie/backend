@@ -31,6 +31,11 @@ export const Task = sequelize.define(
     description: {
       type: DataTypes.STRING,
     },
+    exception: {
+      type: DataTypes.BOOLEAN,
+      allowNull: { args: false, msg: "Please enter task exception." },
+      defaultValue: false,
+    },
     status: {
       type: DataTypes.ENUM("backlog", "todo", "in-progress", "done"),
       allowNull: { args: false, msg: "Please enter task status." },
