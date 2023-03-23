@@ -71,8 +71,3 @@ Task.belongsTo(User, {
   foreignKey: "createdBy",
   targetKey: "id",
 });
-
-Task.belongsTo(Project, {
-  foreignKey: "projectId",
-  targetKey: "id",
-});
