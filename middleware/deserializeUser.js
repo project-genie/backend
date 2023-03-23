@@ -31,8 +31,9 @@ export default function deserializeUser(req, res, next) {
   const newAccessToken = signJWT(session, "15m");
 
   res.cookie("accessToken", newAccessToken, {
-    maxAge: 900000, // 15 minutes
+    maxAge: 14400000, // 4 hours
     httpOnly: true,
+    // sameSite: "none",
   });
 
   req.user = verifyJWT(newAccessToken).payload;

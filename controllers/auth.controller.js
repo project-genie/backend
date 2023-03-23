@@ -142,20 +142,22 @@ export async function createSession(req, res) {
   // create access token
   const accessToken = signJWT(
     { id: user.id, email: user.email, name: user.name, sessionId: session.id },
-    "4h"
+    "15m"
   );
 
-  const refreshToken = signJWT({ sessionId: session.id }, "1y");
+  const refreshToken = signJWT({ sessionId: session.id }, "1h");
 
   // set access token in cookie
   res.cookie("accessToken", accessToken, {
-    maxAge: 900000, // 15 minutes
+    maxAge: 14400000, // 4 hours
     httpOnly: true,
+    // sameSite: "none",
   });
 
   res.cookie("refreshToken", refreshToken, {
-    maxAge: 3.6e6, // 1 hour
+    maxAge: 28800000, // 8 hours
     httpOnly: true,
+    // sameSite: "none",
   });
 
   // send user back
@@ -181,11 +183,13 @@ export async function deleteSession(req, res) {
   res.cookie("accessToken", "", {
     maxAge: 0,
     httpOnly: true,
+    // sameSite: "none",
   });
 
   res.cookie("refreshToken", "", {
     maxAge: 0,
     httpOnly: true,
+    // sameSite: "none",
   });
 
   const session = Session.update({

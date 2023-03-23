@@ -13,6 +13,14 @@ import taskRoutes from "./routes/task.routes.js";
 
 import requireUser from "./middleware/requireUser.js";
 import deserializeUser from "./middleware/deserializeUser.js";
+import cors from "cors";
+
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
 
 // Middlewares
 app.use(morgan("dev"));
