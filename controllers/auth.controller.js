@@ -167,17 +167,17 @@ export async function createSession(req, res) {
     "15m"
   );
 
-  const refreshToken = signJWT({ sessionId: session.id }, "30s");
+  const refreshToken = signJWT({ sessionId: session.id }, "1h");
 
   // set access token in cookie
   res.cookie("accessToken", accessToken, {
-    maxAge: 10000, // 15 minutes
+    maxAge: 900000, // 15 minutes
     httpOnly: true,
     // sameSite: "none",
   });
 
   res.cookie("refreshToken", refreshToken, {
-    maxAge: 30000, // 8 hours
+    maxAge: 3.6e6, // 8 hours
     httpOnly: true,
     // sameSite: "none",
   });

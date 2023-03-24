@@ -33,7 +33,7 @@ export default async function deserializeUser(req, res, next) {
     );
 
     res.cookie("accessToken", newAccessToken, {
-      maxAge: 10000, // 15 minutes
+      maxAge: 900000, // 15 minutes
       httpOnly: true,
       // sameSite: "none",
     });
