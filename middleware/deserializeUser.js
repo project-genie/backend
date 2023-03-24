@@ -29,7 +29,7 @@ export default async function deserializeUser(req, res, next) {
         name: user.name,
         sessionId: session.id,
       },
-      "10s"
+      "15m"
     );
 
     res.cookie("accessToken", newAccessToken, {
@@ -41,7 +41,7 @@ export default async function deserializeUser(req, res, next) {
     req.user = verifyJWT(newAccessToken).payload;
   }
 
-  const { payload: user, expired } = verifyJWT(accessToken);
+  const { payload: user } = verifyJWT(accessToken);
 
   if (user) {
     req.user = user;
