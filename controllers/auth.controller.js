@@ -167,17 +167,17 @@ export async function createSession(req, res) {
     "15m"
   );
 
-  const refreshToken = signJWT({ sessionId: session.id }, "8h");
+  const refreshToken = signJWT({ sessionId: session.id }, "30s");
 
   // set access token in cookie
   res.cookie("accessToken", accessToken, {
-    maxAge: 900000, // 15 minutes
+    maxAge: 10000, // 15 minutes
     httpOnly: true,
     // sameSite: "none",
   });
 
   res.cookie("refreshToken", refreshToken, {
-    maxAge: 28800000, // 8 hours
+    maxAge: 30000, // 8 hours
     httpOnly: true,
     // sameSite: "none",
   });
@@ -193,7 +193,7 @@ export async function createSession(req, res) {
  * @returns {Promise<Response>}
  */
 export async function getSession(sessionId) {
-  const session = Session.findOne({
+  const session = await Session.findOne({
     where: {
       id: sessionId,
     },
