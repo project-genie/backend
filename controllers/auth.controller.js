@@ -1,11 +1,19 @@
 import bcrypt from "bcryptjs";
 import { User, UserCandidate } from "../models/user.model.js";
+import { OrganizationMembers } from "../models/organization.model.js";
+import { ProjectMembers } from "../models/project.model.js";
 import { Session } from "../models/session.model.js";
 import { signJWT } from "../utils/jwt.utils.js";
 import { v4 as uuidv4 } from "uuid";
 import sgMail from "@sendgrid/mail";
 import envConfig from "../config/env.config.js";
 
+/*
+ * Sign Up.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ */
 export async function signUp(req, res) {
   try {
     const userCandidate = await UserCandidate.findOne({
@@ -48,6 +56,13 @@ export async function signUp(req, res) {
   }
 }
 
+/*
+ * Sign Up Candidate.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ *
+ */
 export async function signUpCandidate(req, res) {
   try {
     const user = await User.findOne({
@@ -84,13 +99,13 @@ export async function signUpCandidate(req, res) {
       subject: "Project Genie User Registration",
       text:
         "Please follow the link below to continue to registration process: \n" +
-        "http://localhost:3000/auth/signup?secret=" +
+        "http://localhost:3000/account/signup?secret=" +
         secret +
         "&email=" +
         req.body.email,
       html:
         "Please follow the link below to continue to registration process: \n" +
-        "http://localhost:3000/auth/signup?secret=" +
+        "http://localhost:3000/account/signup?secret=" +
         secret +
         "&email=" +
         req.body.email +
@@ -120,6 +135,13 @@ export async function signUpCandidate(req, res) {
   }
 }
 
+/*
+ * Sign In.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ *
+ */
 export async function createSession(req, res) {
   const { email, password } = req.body;
 
@@ -145,11 +167,11 @@ export async function createSession(req, res) {
     "15m"
   );
 
-  const refreshToken = signJWT({ sessionId: session.id }, "1h");
+  const refreshToken = signJWT({ sessionId: session.id }, "8h");
 
   // set access token in cookie
   res.cookie("accessToken", accessToken, {
-    maxAge: 14400000, // 4 hours
+    maxAge: 900000, // 15 minutes
     httpOnly: true,
     // sameSite: "none",
   });
@@ -164,37 +186,28 @@ export async function createSession(req, res) {
   return res.send(session);
 }
 
+/*
+ * Get Session.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ */
 export async function getSession(sessionId) {
   const session = Session.findOne({
     where: {
-      sessionId: sessionId,
+      id: sessionId,
     },
   });
 
   return session && session.valid ? session : null;
 }
 
+/*
+ * Get Session handler.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ */
 export async function getSessionHandler(req, res) {
   return res.send(req.user);
-}
-
-// log out handler
-export async function deleteSession(req, res) {
-  res.cookie("accessToken", "", {
-    maxAge: 0,
-    httpOnly: true,
-    // sameSite: "none",
-  });
-
-  res.cookie("refreshToken", "", {
-    maxAge: 0,
-    httpOnly: true,
-    // sameSite: "none",
-  });
-
-  const session = Session.update({
-    valid: false,
-  });
-
-  return res.send(session);
 }

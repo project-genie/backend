@@ -1,7 +1,7 @@
 import { signJWT, verifyJWT } from "../utils/jwt.utils.js";
 import { getSession } from "../controllers/auth.controller.js";
 
-export default function deserializeUser(req, res, next) {
+export default async function deserializeUser(req, res, next) {
   const { accessToken, refreshToken } = req.cookies;
 
   if (!accessToken) {
@@ -14,16 +14,15 @@ export default function deserializeUser(req, res, next) {
     return next();
   }
 
+  console.log("expired: ", expired);
   // expired but valid access token
   const { payload: refresh } =
     expired && refreshToken ? verifyJWT(refreshToken) : { payload: null };
-
   if (!refresh) {
     return next();
   }
 
-  const session = getSession(refresh.sessionId);
-
+  const session = await getSession(refresh.sessionId);
   if (!session) {
     return next();
   }
@@ -31,7 +30,7 @@ export default function deserializeUser(req, res, next) {
   const newAccessToken = signJWT(session, "15m");
 
   res.cookie("accessToken", newAccessToken, {
-    maxAge: 14400000, // 4 hours
+    maxAge: 900000, // 15 minutes
     httpOnly: true,
     // sameSite: "none",
   });

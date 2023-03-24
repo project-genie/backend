@@ -10,6 +10,7 @@ import {
   rejectInvitation,
   removeOrganizationMember,
   updateOrganizationMember,
+  getCurrentUserOrganization,
 } from "../controllers/organization.controller.js";
 
 const router = Router();
@@ -30,5 +31,7 @@ router.post("/invite/:id", inviteUserToOrganization); // Invite a user to an org
 
 router.delete("/:id/members", removeOrganizationMember); // Add a member to a project."
 router.put("/:id/members", updateOrganizationMember); // Remove a member from a project.
+
+router.get("/currentuserorganization/:id", getCurrentUserOrganization);
 
 export default router;

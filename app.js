@@ -10,6 +10,7 @@ import authRoutes from "./routes/auth.routes.js";
 import organizationRoutes from "./routes/organization.routes.js";
 import projectRoutes from "./routes/project.routes.js";
 import taskRoutes from "./routes/task.routes.js";
+import userRoutes from "./routes/user.routes.js";
 
 import requireUser from "./middleware/requireUser.js";
 import deserializeUser from "./middleware/deserializeUser.js";
@@ -31,6 +32,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use(deserializeUser);
 
+app.use("/api/users", requireUser, userRoutes);
 app.use("/api/organizations", requireUser, organizationRoutes);
 app.use("/api/projects", requireUser, projectRoutes);
 app.use("/api/tasks", requireUser, taskRoutes);

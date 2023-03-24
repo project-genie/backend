@@ -9,6 +9,7 @@ import {
   addProjectMember,
   removeProjectMember,
   updateProjectMember,
+  getCurrentUserProject,
 } from "../controllers/project.controller.js";
 
 const router = Router();
@@ -26,4 +27,7 @@ router.get("/:id/members", getProjectMembers); // Get all members of a project.
 router.post("/:id/members", addProjectMember); // Add a member to a project.
 router.delete("/:id/members", removeProjectMember); // Remove a member from a project.
 router.put("/:id/members", updateProjectMember); // Update a member of a project.
+
+router.get("/currentuserproject/:id", getCurrentUserProject);
+
 export default router;

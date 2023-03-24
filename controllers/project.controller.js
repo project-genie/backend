@@ -473,3 +473,44 @@ export async function updateProjectMember(req, res) {
     });
   }
 }
+
+/*
+ * Get Current User of project.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ */
+export async function getCurrentUserProject(req, res) {
+  // get project id from parameters
+  const projectId = req.params["id"];
+
+  const userId = req.user.id;
+
+  try {
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId: userId,
+        projectId: projectId,
+      },
+    });
+
+    if (!projectMember) {
+      return res.status(404).send({
+        success: false,
+        message: "Project member not found.",
+      });
+    }
+
+    return res.send({
+      success: true,
+      message: "Project member found.",
+      data: projectMember,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message:
+        error.message || "Some error occurred while retrieving project member.",
+    });
+  }
+}

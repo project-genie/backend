@@ -168,6 +168,7 @@ export async function getOrganizations(req, res) {
         attributes: ["id", "name", "description"],
       },
     });
+
     return res.json({
       success: true,
       message: "Organizations fetched successfully",
@@ -557,6 +558,48 @@ export async function updateOrganizationMember(req, res) {
     res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+}
+
+/*
+ * Get Current User of organization.
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ */
+export async function getCurrentUserOrganization(req, res) {
+  // get organization id from parameters
+  const organizationId = req.params["id"];
+
+  const userId = req.user.id;
+
+  try {
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId: userId,
+        organizationId: organizationId,
+      },
+    });
+
+    if (!organizationMember) {
+      return res.status(404).send({
+        success: false,
+        message: "Organization member not found.",
+      });
+    }
+
+    return res.send({
+      success: true,
+      message: "Organization member found.",
+      data: organizationMember,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message:
+        error.message ||
+        "Some error occurred while retrieving organization member.",
     });
   }
 }
