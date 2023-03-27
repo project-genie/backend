@@ -269,7 +269,7 @@ export async function getTasksProject(req, res) {
       },
     });
 
-    if (!projectMember || organizationMember.role !== "owner") {
+    if (!projectMember && organizationMember.role !== "owner") {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to perform this action.",

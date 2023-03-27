@@ -18,6 +18,7 @@ export const Organization = sequelize.define(
     },
     description: {
       type: DataTypes.STRING,
+      allowNull: { args: false, msg: "Please enter organization description." },
     },
   },
   {

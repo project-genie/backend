@@ -9,8 +9,13 @@ export default async function deserializeUser(req, res, next) {
     if (!refreshToken) {
       return next();
     }
-
+    console.log("---------------------------");
+    console.log("---------------------------");
+    console.log("---------------------------");
+    console.log("Missing access token but refresh token is present");
+    console.log("Refresh: ", refreshToken);
     const { payload: refresh } = verifyJWT(refreshToken);
+
     if (!refresh) {
       return next();
     }

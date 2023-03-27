@@ -514,3 +514,45 @@ export async function getCurrentUserProject(req, res) {
     });
   }
 }
+
+export async function getProjectsOrganizationCurrentUser(req, res) {
+  const organizationId = req.params["id"];
+
+  const userId = req.user.id;
+
+  try {
+    const projects = await Project.findAll({
+      where: {
+        organizationId: organizationId,
+      },
+      include: [
+        {
+          model: ProjectMembers,
+          as: "project_members",
+          where: {
+            userId: userId,
+          },
+        },
+      ],
+    });
+
+    if (!projects) {
+      return res.status(404).send({
+        success: false,
+        message: "Project member not found.",
+      });
+    }
+
+    return res.send({
+      success: true,
+      message: "Project member found.",
+      data: projects,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message:
+        error.message || "Some error occurred while retrieving project member.",
+    });
+  }
+}

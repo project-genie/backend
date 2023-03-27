@@ -22,6 +22,7 @@ export const Project = sequelize.define(
     },
     description: {
       type: DataTypes.STRING,
+      allowNull: { args: false, msg: "Please enter project description." },
     },
   },
   {
