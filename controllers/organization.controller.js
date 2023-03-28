@@ -93,6 +93,45 @@ export async function deleteOrganization(req, res) {
   }
 }
 
+export async function getOrganization(req, res) {
+  const organizationId = req.params["id"];
+  const userId = req.user.id;
+  try {
+    // Authorization check
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember) {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized.",
+      });
+    }
+
+    // Find the organization by primary key.
+    const organization = await Organization.findByPk(organizationId);
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+    return res.json({
+      success: true,
+      message: "Organization fetched successfully",
+      data: organization,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
 /*
  * Update an organization.
  * @param {Request} req
@@ -439,7 +478,7 @@ export async function rejectInvitation(req, res) {
  */
 export async function removeOrganizationMember(req, res) {
   const organizationId = req.params["id"];
-  const { userId } = req.body;
+  const userId = req.params["userId"];
   const currentUserId = req.user.id;
 
   try {
@@ -482,21 +521,6 @@ export async function removeOrganizationMember(req, res) {
       });
     }
 
-    // Check if the user is the last owner of the organization.
-    const owners = await OrganizationMembers.findAll({
-      where: {
-        organizationId,
-        role: "owner",
-      },
-    });
-
-    if (owners.length === 1) {
-      return res.status(400).json({
-        success: false,
-        message: "You cannot remove the last owner of the organization.",
-      });
-    }
-
     await organizationMember.destroy();
 
     return res.json({
@@ -534,6 +558,20 @@ export async function updateOrganizationMember(req, res) {
       return res.status(401).json({
         success: false,
         message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const organizationOwners = await OrganizationMembers.findAll({
+      where: {
+        organizationId,
+        role: "owner",
+      },
+    });
+    if (organizationOwners.length === 1) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You cannot change the role of the only owner of the organization.",
       });
     }
 
@@ -600,6 +638,92 @@ export async function getCurrentUserOrganization(req, res) {
       message:
         error.message ||
         "Some error occurred while retrieving organization member.",
+    });
+  }
+}
+
+export async function getOrganizationInvites(req, res) {
+  const organizationId = req.params["id"];
+  const userId = req.user.id;
+
+  try {
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember && organizationMember.role !== "owner") {
+      return res.status(401).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const invites = await Invite.findAll({
+      where: {
+        organizationId,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Invites found.",
+      data: invites,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function removeInvitation(req, res) {
+  const organizationId = req.params["id"];
+  const { userId } = req.body;
+  const currentUserId = req.user.id;
+
+  try {
+    const currentUser = await OrganizationMembers.findOne({
+      where: {
+        organizationId,
+        userId: currentUserId,
+      },
+    });
+
+    if (!currentUser || currentUser.role !== "owner") {
+      return res.status(401).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    const invite = await Invite.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!invite) {
+      return res.status(404).json({
+        success: false,
+        message: "Invite not found.",
+      });
+    }
+
+    await invite.destroy();
+
+    return res.json({
+      success: true,
+      message: "Invite removed successfully.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 }

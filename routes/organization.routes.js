@@ -3,6 +3,7 @@ import {
   createOrganization,
   deleteOrganization,
   updateOrganization,
+  getOrganization,
   getOrganizations,
   getOrganizationMembers,
   inviteUserToOrganization,
@@ -11,6 +12,8 @@ import {
   removeOrganizationMember,
   updateOrganizationMember,
   getCurrentUserOrganization,
+  getOrganizationInvites,
+  removeInvitation,
 } from "../controllers/organization.controller.js";
 
 const router = Router();
@@ -20,17 +23,22 @@ router.post("/", createOrganization);
 router.delete("/:id", deleteOrganization);
 router.put("/:id", updateOrganization);
 
+router.get("/:id/members", getOrganizationMembers); // Get all members of an organization.
+router.get("/:id", getOrganization);
+
 // Other routes
 router.get("/", getOrganizations); // Get all organizations of the current user.
-router.get("/:id/members", getOrganizationMembers); // Get all members of an organization.
+
+router.get("/invites/:id", getOrganizationInvites); // Accept an invitation to an organization.
+router.post("/invites/:id", removeInvitation); // Remove an invitation
 
 router.post("/invite/accept", acceptInvitation); // Accept an invitation to an organization.
 router.post("/invite/reject", rejectInvitation); // Reject an invitation to an organization.
 // Invite operations
 router.post("/invite/:id", inviteUserToOrganization); // Invite a user to an organization.
 
-router.delete("/:id/members", removeOrganizationMember); // Add a member to a project."
-router.put("/:id/members", updateOrganizationMember); // Remove a member from a project.
+router.delete("/:id/members/:userId", removeOrganizationMember); // Remove a member from a project.
+router.put("/:id/members", updateOrganizationMember); //  Update a member of a project.
 
 router.get("/currentuserorganization/:id", getCurrentUserOrganization);
 
