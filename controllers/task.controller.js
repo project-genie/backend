@@ -22,6 +22,7 @@ export async function createTask(req, res) {
     priority,
     dueDate,
     difficulty,
+    createdBy,
   } = req.body;
   const userId = req.user.id;
   try {
@@ -80,6 +81,7 @@ export async function createTask(req, res) {
       difficulty,
       projectId,
       assigneeId,
+      createdBy,
     });
 
     return res.json({
@@ -126,7 +128,7 @@ export async function deleteTask(req, res) {
     if (
       !projectMember ||
       (userId !== task.assigneeId &&
-        projectMember.role !== "manager" &&
+        projectMember.role !== "owner" &&
         userId !== task.createdBy)
     ) {
       return res.status(403).json({
@@ -193,7 +195,7 @@ export async function updateTask(req, res) {
     if (
       !projectMember ||
       (userId !== task.assigneeId &&
-        projectMember.role !== "manager" &&
+        projectMember.role !== "owner" &&
         userId !== task.createdBy)
     ) {
       return res.status(403).json({

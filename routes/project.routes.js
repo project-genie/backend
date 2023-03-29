@@ -11,6 +11,7 @@ import {
   updateProjectMember,
   getCurrentUserProject,
   getProjectsOrganizationCurrentUser,
+  getPotentialMembers,
 } from "../controllers/project.controller.js";
 
 const router = Router();
@@ -24,10 +25,11 @@ router.put("/:id", updateProject);
 router.get("/", getProjectsCurrentUser); // Get all projects of the current user.
 router.get("/organization/currentuser/:id", getProjectsOrganizationCurrentUser); // Get all projects of the current user in an organization.
 router.get("/organization/:id", getProjectsOrganization); // Get all projects of an organization.
+router.get("/:id/nonmembers", getPotentialMembers); // Get all members of a project.
 router.get("/:id/members", getProjectMembers); // Get all members of a project.
 
 router.post("/:id/members", addProjectMember); // Add a member to a project.
-router.delete("/:id/members", removeProjectMember); // Remove a member from a project.
+router.post("/:id/members/remove", removeProjectMember); // Remove a member from a project.
 router.put("/:id/members", updateProjectMember); // Update a member of a project.
 
 router.get("/currentuserproject/:id", getCurrentUserProject);

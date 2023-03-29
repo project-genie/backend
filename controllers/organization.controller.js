@@ -567,7 +567,10 @@ export async function updateOrganizationMember(req, res) {
         role: "owner",
       },
     });
-    if (organizationOwners.length === 1) {
+    if (
+      organizationOwners.length === 1 &&
+      organizationOwners.filter((o) => o.userId === userId).length === 1
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -591,6 +594,11 @@ export async function updateOrganizationMember(req, res) {
 
     await organizationMember.update({
       role,
+    });
+
+    return res.json({
+      success: true,
+      message: "User role updated successfully.",
     });
   } catch (error) {
     res.status(500).json({

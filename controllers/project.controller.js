@@ -556,3 +556,50 @@ export async function getProjectsOrganizationCurrentUser(req, res) {
     });
   }
 }
+
+export async function getPotentialMembers(req, res) {
+  const projectId = req.params["id"];
+
+  try {
+    const project = await Project.findByPk(projectId);
+
+    const organizationMembers = await OrganizationMembers.findAll({
+      where: {
+        organizationId: project.organizationId,
+      },
+      include: {
+        model: User,
+        attributes: ["id", "name", "email"],
+      },
+    });
+
+    const projectMembers = await ProjectMembers.findAll({
+      where: {
+        projectId: projectId,
+      },
+      include: {
+        model: User,
+        attributes: ["id", "name", "email"],
+      },
+    });
+
+    const potentialMembers = organizationMembers.filter(
+      (organizationMember) =>
+        !projectMembers.some(
+          (projectMember) => projectMember.userId === organizationMember.userId
+        )
+    );
+
+    return res.send({
+      success: true,
+      message: "Potential members found.",
+      data: potentialMembers,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message:
+        error.message || "Some error occurred while retrieving project member.",
+    });
+  }
+}

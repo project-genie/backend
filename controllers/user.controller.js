@@ -1,4 +1,5 @@
 import { Session } from "../models/session.model.js";
+import { User } from "../models/user.model.js";
 
 /*
  * Logout.
@@ -31,4 +32,28 @@ export async function signOut(req, res) {
   });
 
   return res.send();
+}
+
+export async function getUser(req, res) {
+  const { id } = req.params;
+  try {
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res
+        .status(404)
+        .send({ success: false, message: "User not found." });
+    }
+    return res.send({
+      success: true,
+      message: "User found.",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).send({ success: false, message: error.message });
+  }
 }
