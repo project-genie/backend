@@ -603,3 +603,34 @@ export async function getPotentialMembers(req, res) {
     });
   }
 }
+
+export async function getProject(req, res) {
+  const projectId = req.params["id"];
+  const userId = req.user.id;
+
+  try {
+    const project = await Project.findByPk(projectId, {
+      where: {
+        id: projectId,
+      },
+    });
+
+    if (!project) {
+      return res.status(404).send({
+        success: false,
+        message: "Project not found.",
+      });
+    }
+
+    return res.send({
+      success: true,
+      message: "Project found.",
+      data: project,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message: error.message || "Some error occurred while retrieving project.",
+    });
+  }
+}
