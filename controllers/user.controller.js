@@ -1,5 +1,6 @@
 import { Session } from "../models/session.model.js";
 import { User } from "../models/user.model.js";
+import { Invite, Organization } from "../models/organization.model.js";
 
 /*
  * Logout.
@@ -52,6 +53,29 @@ export async function getUser(req, res) {
         email: user.email,
         createdAt: user.createdAt,
       },
+    });
+  } catch (error) {
+    return res.status(500).send({ success: false, message: error.message });
+  }
+}
+
+export async function getCurrentUserInvites(req, res) {
+  const userId = req.user.id;
+  try {
+    const invites = await Invite.findAll({
+      where: {
+        userId,
+      },
+      include: {
+        model: Organization,
+        attributes: ["id", "name"],
+      },
+    });
+
+    return res.send({
+      success: true,
+      message: "Invites found.",
+      data: invites,
     });
   } catch (error) {
     return res.status(500).send({ success: false, message: error.message });

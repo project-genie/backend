@@ -7,6 +7,7 @@ import { User } from "../models/user.model.js";
 import { v4 as uuidv4 } from "uuid";
 import sgMail from "@sendgrid/mail";
 import envConfig from "../config/env.config.js";
+import { Op, Sequelize } from "sequelize";
 
 /*
  * Create an organization.
@@ -198,13 +199,12 @@ export async function getOrganizations(req, res) {
   const userId = req.user.id;
   try {
     // Find all organizations where the user is a member.
-    const organizations = await OrganizationMembers.findAll({
-      where: {
-        userId,
-      },
+    const organizations = await Organization.findAll({
       include: {
-        model: Organization,
-        attributes: ["id", "name", "description"],
+        model: OrganizationMembers,
+        where: {
+          userId,
+        },
       },
     });
 
@@ -727,6 +727,46 @@ export async function removeInvitation(req, res) {
     return res.json({
       success: true,
       message: "Invite removed successfully.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function leaveOrganization(req, res) {
+  const organizationId = req.params["id"];
+  const userId = req.user.id;
+
+  try {
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+
+    if (!organizationMember) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization member not found.",
+      });
+    }
+
+    if (organizationMember.role === "owner") {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot leave an organization you own.",
+      });
+    }
+
+    await organizationMember.destroy();
+
+    return res.json({
+      success: true,
+      message: "You have left the organization successfully.",
     });
   } catch (error) {
     res.status(500).json({

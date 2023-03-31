@@ -14,6 +14,7 @@ import {
   getCurrentUserOrganization,
   getOrganizationInvites,
   removeInvitation,
+  leaveOrganization,
 } from "../controllers/organization.controller.js";
 
 const router = Router();
@@ -21,6 +22,7 @@ const router = Router();
 // CRUD
 router.post("/", createOrganization);
 router.delete("/:id", deleteOrganization);
+router.post("/:id/leave", leaveOrganization);
 router.put("/:id", updateOrganization);
 
 router.get("/:id/members", getOrganizationMembers); // Get all members of an organization.
@@ -29,7 +31,7 @@ router.get("/:id", getOrganization);
 // Other routes
 router.get("/", getOrganizations); // Get all organizations of the current user.
 
-router.get("/invites/:id", getOrganizationInvites); // Accept an invitation to an organization.
+router.get("/invites/:id", getOrganizationInvites); // Get all invites.
 router.post("/invites/:id", removeInvitation); // Remove an invitation
 
 router.post("/invite/accept", acceptInvitation); // Accept an invitation to an organization.

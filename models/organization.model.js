@@ -91,6 +91,11 @@ Organization.hasMany(OrganizationMembers, {
   sourceKey: "id",
 });
 
+Invite.belongsTo(Organization, {
+  foreignKey: "organizationId",
+  targetKey: "id",
+});
+
 Organization.hasMany(Project, {
   foreignkey: "organizationId",
   sourceKey: "id",
