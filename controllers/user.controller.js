@@ -4,18 +4,19 @@ import { Invite, Organization } from "../models/organization.model.js";
 
 /*
  * Logout.
- * @param {Request} req
+ * @param {Request} {user:{id}}
  * @param {Response} res
  * @returns {Promise<Response>}
  */
 export async function signOut(req, res) {
+  // Get the user id from the request.
   const userId = req.user.id;
   const sessions = await Session.findAll({
     where: {
       userId,
     },
   });
-
+  // Destroy all sessions for this user.
   sessions.forEach(async (session) => {
     await session.destroy();
   });
@@ -35,8 +36,15 @@ export async function signOut(req, res) {
   return res.send();
 }
 
+/*
+ * Get user.
+ * @param {Request} {params:{id}}
+ * @param {Response} {}
+ * @returns {Promise<Response>}
+ * */
 export async function getUser(req, res) {
-  const { id } = req.params;
+  // Get the user id from the request.
+  const id = req.params["id"];
   try {
     const user = await User.findByPk(id);
     if (!user) {
@@ -47,7 +55,7 @@ export async function getUser(req, res) {
     return res.send({
       success: true,
       message: "User found.",
-      user: {
+      data: {
         id: user.id,
         name: user.name,
         email: user.email,
@@ -59,9 +67,17 @@ export async function getUser(req, res) {
   }
 }
 
+/*
+ * Get current user invites.
+ * @param {Request} {user:{id}}
+ * @param {Response} {}
+ * @returns {Promise<Response>}
+ * */
 export async function getCurrentUserInvites(req, res) {
+  // Get the user id from the request.
   const userId = req.user.id;
   try {
+    // Get all invites for the user.
     const invites = await Invite.findAll({
       where: {
         userId,

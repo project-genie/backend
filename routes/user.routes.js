@@ -6,8 +6,10 @@ import {
 } from "../controllers/user.controller.js";
 
 const router = Router();
-router.post("/signout", signOut);
+
 router.get("/invites", getCurrentUserInvites);
+router.post("/signout", signOut);
 router.get("/:id", getUser);
 
 export default router;
+  

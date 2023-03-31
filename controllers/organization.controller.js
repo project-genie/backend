@@ -7,16 +7,18 @@ import { User } from "../models/user.model.js";
 import { v4 as uuidv4 } from "uuid";
 import sgMail from "@sendgrid/mail";
 import envConfig from "../config/env.config.js";
-import { Op, Sequelize } from "sequelize";
 
 /*
- * Create an organization.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {name, description}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  */
 export async function createOrganization(req, res) {
+  // Get the organization name and description from the request body.
   const { name, description } = req.body;
+
+  // Get the current user id from the request object.
+  const userId = req.user.id;
   try {
     // Create the organization.
     const newOrganization = await Organization.create({
@@ -27,7 +29,7 @@ export async function createOrganization(req, res) {
     // Add the owner to the organization with the 'owner' role.
     await OrganizationMembers.create({
       organizationId: newOrganization.id,
-      userId: req.user.id,
+      userId,
       role: "owner",
     });
 
@@ -48,14 +50,17 @@ export async function createOrganization(req, res) {
 
 /*
   * Delete an organization.
-  * @param {Request} req
-  * @param {Response} res
+  * @param {Request} {params: {id}, user: {id}}
+  * @param {Response} {success, message}
   * @returns {Promise<Response>}
   * Only the 'owner' of the organization can delete the organization.
   TODO: Add mail approval for deleting the organization.
 */
 export async function deleteOrganization(req, res) {
+  // Get the organization id from the request parameters.
   const organizationId = req.params["id"];
+
+  // Get the current user id from the request object.
   const userId = req.user.id;
   try {
     // Authorization check
@@ -94,8 +99,17 @@ export async function deleteOrganization(req, res) {
   }
 }
 
+/*
+ * Delete an organization.
+ * @param {Request} {params: {id}, user: {id}}
+ * @param {Response} {success, message, data}
+ * @returns {Promise<Response>}
+ */
 export async function getOrganization(req, res) {
+  // Get the organization id from the request parameters.
   const organizationId = req.params["id"];
+
+  // Get the current user id from the request object.
   const userId = req.user.id;
   try {
     // Authorization check
@@ -135,17 +149,21 @@ export async function getOrganization(req, res) {
 }
 /*
  * Update an organization.
- * @param {Request} req
+ * @param {Request} {body: {id, name, description}, user: {id}, params: {id}}
  * @param {Response} res
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can update the organization.
  */
 export async function updateOrganization(req, res) {
-  // Get the name and description from the request body.
-  const { name, description } = req.body;
-  const userId = req.user.id;
   // Get the organization id from the request parameters.
   const organizationId = req.params["id"];
+
+  // Get the name and description from the request body.
+  const { name, description } = req.body;
+
+  // Get the current user id from the request object.
+  const userId = req.user.id;
+
   try {
     // Authorization check
     const organizationMember = await OrganizationMembers.findOne({
@@ -189,8 +207,8 @@ export async function updateOrganization(req, res) {
 
 /*
  * Get organizations.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Get current user's all organizations.
  */
@@ -223,13 +241,16 @@ export async function getOrganizations(req, res) {
 
 /*
  * Get organization members.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {params: {id}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Organization members can view the members of the organization.
  */
 export async function getOrganizationMembers(req, res) {
+  // Get the organization id from the request parameters.
   const organizationId = req.params["id"];
+
+  // Get the current user id from the request object.
   const userId = req.user.id;
   try {
     // Authorization check.
@@ -271,15 +292,19 @@ export async function getOrganizationMembers(req, res) {
 
 /*
  * Invite user to organization.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {email}, params: {id}, user: {id}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can invite a user to the organization.
  */
 export async function inviteUserToOrganization(req, res) {
+  // Get the organization id from the request parameters.
   const { email } = req.body;
+
+  // Get the organization id from the request parameters.
   const organizationId = req.params["id"];
 
+  // Get the current user id from the request object.
   const userId = req.user.id;
 
   try {
@@ -382,15 +407,19 @@ export async function inviteUserToOrganization(req, res) {
 
 /*
  * Accept an invitation.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {secret}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * User can accept an invitation to an organization.
  */
 export async function acceptInvitation(req, res) {
+  // Get the secret from the request body.
   const { secret } = req.body;
+
+  // Get the current user id from the request object.
   const userId = req.user.id;
   try {
+    // Find the invite by secret and userId.
     const invite = await Invite.findOne({
       where: {
         secret,
@@ -398,6 +427,7 @@ export async function acceptInvitation(req, res) {
       },
     });
 
+    // If invite not found, return error.
     if (!invite) {
       return res.status(404).json({
         success: false,
@@ -405,12 +435,14 @@ export async function acceptInvitation(req, res) {
       });
     }
 
+    // Create a new organization member.
     const organizationMember = await OrganizationMembers.create({
       organizationId: invite.organizationId,
       userId: invite.userId,
       role: "member",
     });
 
+    // Delete the invite.
     await invite.destroy();
 
     return res.json({
@@ -428,15 +460,19 @@ export async function acceptInvitation(req, res) {
 
 /*
  * Reject an invitation.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {secret}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * User can reject an invitation to an organization.
  */
 export async function rejectInvitation(req, res) {
+  // Get the secret from the request body.
   const { secret } = req.body;
+
+  // Get the current user id from the request object.
   const userId = req.user.id;
   try {
+    // Find the invite by secret and userId.
     const invite = await Invite.findOne({
       where: {
         secret,
@@ -444,6 +480,7 @@ export async function rejectInvitation(req, res) {
       },
     });
 
+    // If invite not found, return error.
     if (!invite) {
       return res.status(404).json({
         success: false,
@@ -451,6 +488,7 @@ export async function rejectInvitation(req, res) {
       });
     }
 
+    // Delete the invite.
     await invite.destroy();
 
     return res.json({
@@ -468,8 +506,8 @@ export async function rejectInvitation(req, res) {
 
 /*
  * Remove a member from an organization.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {secret}, user: {id}, params: {id, userId}
+ * @param {Response} { success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can remove a member from the organization.
  * The owner cannot remove themselves from the organization.
@@ -477,8 +515,10 @@ export async function rejectInvitation(req, res) {
  * The owner cannot remove the last owner from the organization.
  */
 export async function removeOrganizationMember(req, res) {
+  // Get the organization id and user id from the request params.
   const organizationId = req.params["id"];
   const userId = req.params["userId"];
+  // Get the current user id from the request object.
   const currentUserId = req.user.id;
 
   try {
@@ -537,16 +577,20 @@ export async function removeOrganizationMember(req, res) {
 
 /*
  * Update a member's role in an organization.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {userId, role}, user: {id}, params: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can update a member's role in the organization.
  */
 export async function updateOrganizationMember(req, res) {
+  // Get the organization id from the request params.
   const organizationId = req.params["id"];
+  // Get the user id and role from the request body.
   const { userId, role } = req.body;
+  // Get the current user id from the request object.
   const currentUserId = req.user.id;
   try {
+    // Authorization check.
     const currentUser = await OrganizationMembers.findOne({
       where: {
         organizationId,
@@ -561,12 +605,14 @@ export async function updateOrganizationMember(req, res) {
       });
     }
 
+    // Check if the user is a member of the organization.
     const organizationOwners = await OrganizationMembers.findAll({
       where: {
         organizationId,
         role: "owner",
       },
     });
+    // If user is the only owner, return error.
     if (
       organizationOwners.length === 1 &&
       organizationOwners.filter((o) => o.userId === userId).length === 1
@@ -577,7 +623,7 @@ export async function updateOrganizationMember(req, res) {
           "You cannot change the role of the only owner of the organization.",
       });
     }
-
+    // Check if the user is a member of the organization.
     const organizationMember = await OrganizationMembers.findOne({
       where: {
         organizationId,
@@ -591,7 +637,7 @@ export async function updateOrganizationMember(req, res) {
         message: "User is not a member of the organization",
       });
     }
-
+    // Check if the user is the owner of the organization.
     await organizationMember.update({
       role,
     });
@@ -610,14 +656,14 @@ export async function updateOrganizationMember(req, res) {
 
 /*
  * Get Current User of organization.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {params: {id}, user: {id}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  */
 export async function getCurrentUserOrganization(req, res) {
   // get organization id from parameters
   const organizationId = req.params["id"];
-
+  // get user id from request object
   const userId = req.user.id;
 
   try {
@@ -650,11 +696,20 @@ export async function getCurrentUserOrganization(req, res) {
   }
 }
 
+/*
+ * Get All Invites of an organization.
+ * @param {Request} {params: {id}, user: {id}}
+ * @param {Response} {success, message, data}
+ * @returns {Promise<Response>}
+ * */
 export async function getOrganizationInvites(req, res) {
+  // get organization id from parameters
   const organizationId = req.params["id"];
+  // get user id from request object
   const userId = req.user.id;
 
   try {
+    // Authorization check.
     const organizationMember = await OrganizationMembers.findOne({
       where: {
         userId,
@@ -688,6 +743,12 @@ export async function getOrganizationInvites(req, res) {
   }
 }
 
+/*
+ * Remove an invite from an organization.
+ * @param {Request} {body: {userId}, user: {id}, params: {id}}
+ * @param {Response} {success, message, data}
+ * @returns {Promise<Response>}
+ * */
 export async function removeInvitation(req, res) {
   const organizationId = req.params["id"];
   const { userId } = req.body;
@@ -736,11 +797,21 @@ export async function removeInvitation(req, res) {
   }
 }
 
+/*
+ * Leave an organization.
+ * @param {Request} {params: {id}, user: {id}}
+ * @param {Response} {success, message, data}
+ * @returns {Promise<Response>}
+ * */
+
 export async function leaveOrganization(req, res) {
+  // get organization id from parameters
   const organizationId = req.params["id"];
+  // get user id from request object
   const userId = req.user.id;
 
   try {
+    // Check if the user is a member of the organization.
     const organizationMember = await OrganizationMembers.findOne({
       where: {
         userId,
@@ -748,6 +819,7 @@ export async function leaveOrganization(req, res) {
       },
     });
 
+    // If user is not a member of the organization, return error.
     if (!organizationMember) {
       return res.status(404).json({
         success: false,
@@ -755,6 +827,7 @@ export async function leaveOrganization(req, res) {
       });
     }
 
+    // If user is the owner of the organization, return error.
     if (organizationMember.role === "owner") {
       return res.status(400).json({
         success: false,
@@ -762,6 +835,7 @@ export async function leaveOrganization(req, res) {
       });
     }
 
+    // Delete the organization member.
     await organizationMember.destroy();
 
     return res.json({

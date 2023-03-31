@@ -1,7 +1,5 @@
 import bcrypt from "bcryptjs";
 import { User, UserCandidate } from "../models/user.model.js";
-import { OrganizationMembers } from "../models/organization.model.js";
-import { ProjectMembers } from "../models/project.model.js";
 import { Session } from "../models/session.model.js";
 import { signJWT } from "../utils/jwt.utils.js";
 import { v4 as uuidv4 } from "uuid";
@@ -10,20 +8,24 @@ import envConfig from "../config/env.config.js";
 
 /*
  * Sign Up.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {name, email, secret, password}}
+ * @param {Response} {success, message}
  * @returns {Promise<Response>}
  */
 export async function signUp(req, res) {
+  // Get the parameters from the request.
+  const { name, email, secret, password } = req.body;
+
   try {
+    // Check if the user candidate exists.
     const userCandidate = await UserCandidate.findOne({
-      where: { email: req.body.email },
+      where: { email },
     });
 
     if (
       !userCandidate ||
       userCandidate.status !== "pending" ||
-      userCandidate.secret !== req.body.secret
+      userCandidate.secret !== secret
     ) {
       return res.status(401).send({
         success: false,
@@ -31,17 +33,17 @@ export async function signUp(req, res) {
       });
     }
 
-    if (userCandidate.secret !== req.body.secret) {
+    if (userCandidate.secret !== secret) {
       return res.status(401).send({
         success: false,
         message: "Invalid secret",
       });
     }
-
+    // Create the user
     await User.create({
-      name: req.body.name,
-      email: req.body.email,
-      password: bcrypt.hashSync(req.body.password, 8),
+      name,
+      email,
+      password: bcrypt.hashSync(password, 8),
     });
 
     await userCandidate.destroy();
@@ -58,15 +60,17 @@ export async function signUp(req, res) {
 
 /*
  * Sign Up Candidate.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {email}}
+ * @param {Response} {success, message}
  * @returns {Promise<Response>}
- *
  */
 export async function signUpCandidate(req, res) {
+  // Get the parameters from the request.
+  const { email } = req.body;
   try {
+    // Check if the user exists
     const user = await User.findOne({
-      where: { email: req.body.email },
+      where: { email },
     });
 
     if (user) {
@@ -76,8 +80,9 @@ export async function signUpCandidate(req, res) {
       });
     }
 
+    // Check if the user candidate exists.
     const userCandidateSearch = await UserCandidate.findOne({
-      where: { email: req.body.email },
+      where: { email },
     });
 
     if (userCandidateSearch) {
@@ -88,13 +93,13 @@ export async function signUpCandidate(req, res) {
     sgMail.setApiKey(envConfig.SENDGRID_KEY);
 
     const userCandidate = await UserCandidate.create({
-      email: req.body.email,
+      email,
       secret: secret,
     });
 
     // Send Mail with the link to continue.
     const msg = {
-      to: req.body.email, // Change to your recipient
+      to: email, // Change to your recipient
       from: "mertplayschess@outlook.com", // Change to your verified sender
       subject: "Project Genie User Registration",
       text:
@@ -102,13 +107,13 @@ export async function signUpCandidate(req, res) {
         "http://localhost:3000/account/signup?secret=" +
         secret +
         "&email=" +
-        req.body.email,
+        email,
       html:
         "Please follow the link below to continue to registration process: \n" +
         "http://localhost:3000/account/signup?secret=" +
         secret +
         "&email=" +
-        req.body.email +
+        email +
         "\n" +
         "If you didn't register, please ignore this email.",
     };
@@ -137,14 +142,14 @@ export async function signUpCandidate(req, res) {
 
 /*
  * Sign In.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {email, password}}
+ * @param {Response} {success, message}
  * @returns {Promise<Response>}
  *
  */
 export async function createSession(req, res) {
+  // Get the parameters from the request.
   const { email, password } = req.body;
-
   const user = await User.findOne({
     where: {
       email,

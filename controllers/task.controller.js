@@ -6,11 +6,20 @@ import {
   OrganizationMembers,
 } from "../models/organization.model.js";
 
+/*
+ * Get a task by id.
+ * @param {Request} {id}
+ * @param {Response} res
+ * @returns {Promise<Response>}
+ * */
 export async function getTask(req, res) {
+  // Get the project id from the request params.
   const taskId = req.params["id"];
+  // Get the user id from the request.
   const userId = req.user.id;
 
   try {
+    // Check if the task exists.
     const task = await Task.findByPk(taskId);
     if (!task) {
       return res.status(404).json({
@@ -49,12 +58,13 @@ export async function getTask(req, res) {
 
 /*
  * Create Task.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {name, description, priority, dueDate, difficulty, assigneeId, projectId, createdBy}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the project members can create tasks.
  */
 export async function createTask(req, res) {
+  // Get the parameters from the request body.
   const {
     assigneeId,
     projectId,
@@ -65,6 +75,7 @@ export async function createTask(req, res) {
     difficulty,
     createdBy,
   } = req.body;
+  // Get the user id from the request.
   const userId = req.user.id;
   try {
     // Check if the user is a member of the project.
@@ -105,7 +116,7 @@ export async function createTask(req, res) {
         message: "Project not found",
       });
     }
-
+    // Check if the user exists.
     const user = await User.findByPk(assigneeId);
     if (!user) {
       return res.status(404).json({
@@ -113,7 +124,7 @@ export async function createTask(req, res) {
         message: "User not found",
       });
     }
-
+    // Create the task.
     const newTask = await Task.create({
       name,
       description,
@@ -140,13 +151,15 @@ export async function createTask(req, res) {
 
 /*
  * Delete Task.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {id}
+ * @param {Response} {success, message}
  * @returns {Promise<Response>}
  * Only the manager of the project, creator of the task AND the assignee of the task can delete the task.
  */
 export async function deleteTask(req, res) {
+  // Get the task id from the request params.
   const taskId = req.params["id"];
+  // Get the user id from the request.
   const userId = req.user.id;
 
   try {
@@ -166,6 +179,7 @@ export async function deleteTask(req, res) {
       },
     });
 
+    // Check if the user is authorized to perform this action.
     if (
       !projectMember ||
       (userId !== task.assigneeId &&
@@ -195,15 +209,18 @@ export async function deleteTask(req, res) {
 
 /*
  * Update task of a project.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {id, name, description, priority, dueDate, difficulty, assigneeId, projectId, exception, status}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the manager of the project, creator of the task AND the assignee of the task can update the task.
    TODO: If status is being 'completed', we may need to perform additional actions. Such as calculating the time taken to complete the task. It will determine the performance of the assignee.
  * */
 export async function updateTask(req, res) {
+  // Get the task id from the request params.
   const taskId = req.params["id"];
+  // Get the user id from the request.
   const userId = req.user.id;
+  // Get the parameters from the request body.
   const {
     name,
     description,
@@ -217,6 +234,7 @@ export async function updateTask(req, res) {
   } = req.body;
 
   try {
+    // Check the existencies.
     const task = await Task.findByPk(taskId);
     if (!task) {
       return res.status(404).json({
@@ -232,7 +250,7 @@ export async function updateTask(req, res) {
         projectId: task.projectId,
       },
     });
-
+    // Check if the user is authorized to perform this action.
     if (
       !projectMember ||
       (userId !== task.assigneeId &&
@@ -244,7 +262,7 @@ export async function updateTask(req, res) {
         message: "You are not authorized to perform this action.",
       });
     }
-
+    // Update the task
     await task.update({
       name,
       description,
@@ -271,13 +289,15 @@ export async function updateTask(req, res) {
 
 /*
  * Get all tasks of a project.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {id}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the owner of the organization AND members of the project can get the tasks of a project.
  * */
 export async function getTasksProject(req, res) {
+  // Get the project id from the request params.
   const projectId = req.params["id"];
+  // Get the user id from the request.
   const userId = req.user.id;
   try {
     // Get the organization
@@ -288,6 +308,7 @@ export async function getTasksProject(req, res) {
         message: "Project not found",
       });
     }
+    // Get the organization
     const organization = await Organization.findByPk(project.organizationId);
     if (!organization) {
       return res.status(404).json({
@@ -339,14 +360,15 @@ export async function getTasksProject(req, res) {
 
 /*
  * Get all tasks of the current user.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {user: {id}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  */
 export async function getTasksCurrentUser(req, res) {
+  // Get the user id from the request.
   const userId = req.user.id;
-
   try {
+    // Get the tasks of the user.
     const tasks = await Task.findAll({
       where: {
         assigneeId: userId,
@@ -368,17 +390,22 @@ export async function getTasksCurrentUser(req, res) {
 
 /*
  * Get all tasks of a user.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {{params: {organizationId, projectId, userId}, user: {id}}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the owner of the organization AND members of the project can get the tasks of a user.
  */
 export async function getTasksUser(req, res) {
+  // Get the organizationId, projectId, userId from the request params.
   const { organizationId, projectId, userId } = req.params;
+  // Get the user id from the request.
   const currentUserId = req.user.id;
   try {
+    // Get the organization
     const organization = await Organization.findByPk(organizationId);
+    // Get the project
     const project = await Project.findByPk(projectId);
+    // Get the user
     const user = await User.findByPk(userId);
 
     // Check if the user is a member of the organization.
@@ -410,7 +437,7 @@ export async function getTasksUser(req, res) {
         message: "User, Project, or Organization not found",
       });
     }
-
+    // Get the tasks of the user.
     const tasks = await Task.findAll({
       where: {
         assigneeId: userId,

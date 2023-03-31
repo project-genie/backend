@@ -47,6 +47,7 @@ export const OrganizationMembers = sequelize.define("organization_members", {
   },
 });
 
+// invites
 export const Invite = sequelize.define(
   "invites",
   {

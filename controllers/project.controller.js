@@ -7,13 +7,15 @@ import {
 
 /*
  * Create a project.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {name, description, organizationId}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can create projects.
  */
 export async function createProject(req, res) {
+  // Get name, description and organizationId from the request body.
   const { name, description, organizationId } = req.body;
+  // Get the user id from the request object.
   const userId = req.user.id;
   try {
     // Authorization check
@@ -39,13 +41,14 @@ export async function createProject(req, res) {
         message: "Organization not found",
       });
     }
-
+    // Create a new project.
     const newProject = await Project.create({
       name,
       description,
       organizationId,
     });
 
+    // Add the user as a member of the project.
     await ProjectMembers.create({
       projectId: newProject.id,
       userId: req.user.id,
@@ -67,13 +70,15 @@ export async function createProject(req, res) {
 
 /*
  * Delete a project.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {params: {id}, user: {id}}
+ * @param {Response} {success, message}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can delete projects.
  */
 export async function deleteProject(req, res) {
+  // Get the project id from the request parameters.
   const projectId = req.params["id"];
+  // Get the user id from the request object.
   const userId = req.user.id;
   try {
     // Find the project by primary key.
@@ -116,18 +121,18 @@ export async function deleteProject(req, res) {
 
 /*
  * Update the project.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {name, description}, params: {id}, user:{id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can update projects.
  */
 export async function updateProject(req, res) {
   // Get the project name and description from the request body.
   const { name, description } = req.body;
-  const userId = req.user.id;
-
   // Get the project id from the request parameters.
   const projectId = req.params["id"];
+  // Get the user id from the request object.
+  const userId = req.user.id;
 
   try {
     // Find the project by primary key.
@@ -152,7 +157,7 @@ export async function updateProject(req, res) {
         message: "You are unauthorized to perform this action.",
       });
     }
-
+    // Update the project.
     await project.update({
       name,
       description,
@@ -173,13 +178,15 @@ export async function updateProject(req, res) {
 
 /*
  * Get current user projects.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  */
 export async function getProjectsCurrentUser(req, res) {
+  // Get the user id from the request object.
   const userId = req.user.id;
   try {
+    // Get all projects of the user.
     const projects = await ProjectMembers.findAll({
       where: {
         userId,
@@ -204,13 +211,15 @@ export async function getProjectsCurrentUser(req, res) {
 
 /*
  * Get all projects of an organization.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {params: {id}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can get all projects of the organization.
  */
 export async function getProjectsOrganization(req, res) {
+  // Get the organization id from the request parameters.
   const organizationId = req.params["id"];
+  // Get the user id from the request object.
   const userId = req.user.id;
   try {
     // Authorization check
@@ -221,13 +230,15 @@ export async function getProjectsOrganization(req, res) {
       },
     });
 
-    if (!organizationMember || organizationMember.role !== "owner") {
+    // If the user is not a member of the organization.
+    if (!organizationMember) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized to perform this action.",
       });
     }
 
+    // Get all projects of the organization.
     const projects = await Project.findAll({
       where: {
         organizationId,
@@ -248,13 +259,15 @@ export async function getProjectsOrganization(req, res) {
 
 /*
  * Get project members.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {params: {id}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization and project members can get all members of the project.
  */
 export async function getProjectMembers(req, res) {
+  // Get the project id from the request parameters.
   const projectId = req.params["id"];
+  // Get the user id from the request object.
   const userId = req.user.id;
   try {
     // Authorization check
@@ -265,6 +278,7 @@ export async function getProjectMembers(req, res) {
         organizationId: project.organizationId,
       },
     });
+    // If the user is not a member of the organization.
     const projectMember = await ProjectMembers.findOne({
       where: {
         userId,
@@ -303,14 +317,17 @@ export async function getProjectMembers(req, res) {
 
 /*
  * Add a member to a project.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {userId, role}, params:{id}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can add members to a project.
  */
 export async function addProjectMember(req, res) {
+  // Get the userId, rolefrom the request parameters.
   const { userId, role } = req.body;
+  // Get the project id from the request parameters.
   const projectId = req.params["id"];
+  // Get the user id from the request object.
   const currentUserId = req.user.id;
   try {
     // Authorization check
@@ -328,7 +345,7 @@ export async function addProjectMember(req, res) {
         message: "You are unauthorized to perform this action.",
       });
     }
-
+    // Check if the user is already a member of the project.
     const projectMember = await ProjectMembers.findOne({
       where: {
         userId,
@@ -342,7 +359,7 @@ export async function addProjectMember(req, res) {
         message: "User is already a member of the project",
       });
     }
-
+    // Add the user to the project.
     await ProjectMembers.create({
       userId,
       projectId,
@@ -363,14 +380,17 @@ export async function addProjectMember(req, res) {
 
 /*
  * Remove a member from a project.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {userId}, params:{id}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can remove members from a project.
  */
 export async function removeProjectMember(req, res) {
+  // Get the userId from the request parameters.
   const { userId } = req.body;
+  // Get the project id from the request parameters.
   const projectId = req.params["id"];
+  // Get the user id from the request object.
   const currentUserId = req.user.id;
   try {
     const project = await Project.findByPk(projectId);
@@ -387,7 +407,7 @@ export async function removeProjectMember(req, res) {
         message: "You are unauthorized to perform this action.",
       });
     }
-
+    // Check if the user is a member of the project.
     const projectMember = await ProjectMembers.findOne({
       where: {
         userId,
@@ -401,7 +421,7 @@ export async function removeProjectMember(req, res) {
         message: "User is not a member of the project",
       });
     }
-
+    // Remove the user from the project.
     await projectMember.destroy();
 
     return res.json({
@@ -418,14 +438,17 @@ export async function removeProjectMember(req, res) {
 
 /*
  * Update a project member.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {body: {userId, role}, params:{id}, user: {id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the 'owner' of the organization can update a project member. The role can be updated.
  */
 export async function updateProjectMember(req, res) {
+  // Get the userId, role from the request parameters.
   const { userId, role } = req.body;
+  // Get the project id from the request parameters.
   const projectId = req.params["id"];
+  // Get the user id from the request object.
   const currentUserId = req.user.id;
   try {
     // Authorization check
@@ -443,7 +466,7 @@ export async function updateProjectMember(req, res) {
         message: "You are unauthorized to perform this action.",
       });
     }
-
+    // Check if the user is a member of the project.
     const projectMember = await ProjectMembers.findOne({
       where: {
         userId,
@@ -457,7 +480,7 @@ export async function updateProjectMember(req, res) {
         message: "User is not a member of the project.",
       });
     }
-
+    // Update the project member.
     await projectMember.update({
       role,
     });
@@ -476,17 +499,18 @@ export async function updateProjectMember(req, res) {
 
 /*
  * Get Current User of project.
- * @param {Request} req
- * @param {Response} res
+ * @param {Request} {params: {id}, user:{id}}
+ * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  */
 export async function getCurrentUserProject(req, res) {
   // get project id from parameters
   const projectId = req.params["id"];
-
+  //  get user id from request object
   const userId = req.user.id;
 
   try {
+    // check if the user is a member of the project
     const projectMember = await ProjectMembers.findOne({
       where: {
         userId: userId,
@@ -515,11 +539,18 @@ export async function getCurrentUserProject(req, res) {
   }
 }
 
+/*
+ * Get projects of organization for the current user.
+ * @param {Request} {params: {id}, user:{id}}
+ * @param {Response} {success, message, data}
+ * @returns {Promise<Response>}
+ * It is necessary for role checking for each project of the current user.
+ * */
 export async function getProjectsOrganizationCurrentUser(req, res) {
+  // get organization id from parameters
   const organizationId = req.params["id"];
-
+  // get user id from request object
   const userId = req.user.id;
-
   try {
     const projects = await Project.findAll({
       where: {
@@ -557,12 +588,18 @@ export async function getProjectsOrganizationCurrentUser(req, res) {
   }
 }
 
+/*
+ * Get potential members of a project. It is basically the members of the organization that are not members of the current project. It is necessary for adding people to a project.
+ * @param {Request} {params: {id}}
+ * @param {Response} {success, message, data}
+ * @returns {Promise<Response>}
+ * */
 export async function getPotentialMembers(req, res) {
+  // get project id from parameters
   const projectId = req.params["id"];
-
   try {
+    // get the project
     const project = await Project.findByPk(projectId);
-
     const organizationMembers = await OrganizationMembers.findAll({
       where: {
         organizationId: project.organizationId,
@@ -572,7 +609,7 @@ export async function getPotentialMembers(req, res) {
         attributes: ["id", "name", "email"],
       },
     });
-
+    // get the project members
     const projectMembers = await ProjectMembers.findAll({
       where: {
         projectId: projectId,
@@ -583,6 +620,7 @@ export async function getPotentialMembers(req, res) {
       },
     });
 
+    // filter the organization members to get the potential members
     const potentialMembers = organizationMembers.filter(
       (organizationMember) =>
         !projectMembers.some(
@@ -604,10 +642,15 @@ export async function getPotentialMembers(req, res) {
   }
 }
 
+/*
+ * Get project by id.
+ * @param {Request} {params:{id}}
+ * @param {Response} {success, message, data}
+ * @returns {Promise<Response>}
+ * */
 export async function getProject(req, res) {
+  // get project id from parameters
   const projectId = req.params["id"];
-  const userId = req.user.id;
-
   try {
     const project = await Project.findByPk(projectId, {
       where: {

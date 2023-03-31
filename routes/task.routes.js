@@ -12,15 +12,14 @@ import {
 const router = Router();
 
 // CRUD
-router.get("/:id", getTask);
-router.post("/", createTask);
-router.delete("/:id", deleteTask);
-router.put("/:id", updateTask);
-
-// Other routes
+router.post("/", createTask); // Create a new task.
 router.get("/", getTasksCurrentUser); // Get all tasks of a user.
-router.get("/project/:id", getTasksProject); // Get all tasks of a project.
 
+router.get("/:id", getTask); // Get a task.
+router.delete("/:id", deleteTask); // Delete a task.
+router.put("/:id", updateTask); // Update a task.
+
+router.get("/project/:id", getTasksProject); // Get all tasks of a project.
 router.get("/organization/:id/project/:id/user/:id", getTasksUser); // Get all tasks of a user.
 
 export default router;
