@@ -6,6 +6,47 @@ import {
   OrganizationMembers,
 } from "../models/organization.model.js";
 
+export async function getTask(req, res) {
+  const taskId = req.params["id"];
+  const userId = req.user.id;
+
+  try {
+    const task = await Task.findByPk(taskId);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // Check if the user is a member of the project.
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId: task.projectId,
+      },
+    });
+
+    if (!projectMember) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not a member of this project",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Task found",
+      data: task,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 /*
  * Create Task.
  * @param {Request} req

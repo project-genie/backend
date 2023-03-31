@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  getTask,
   createTask,
   deleteTask,
   updateTask,
@@ -11,6 +12,7 @@ import {
 const router = Router();
 
 // CRUD
+router.get("/:id", getTask);
 router.post("/", createTask);
 router.delete("/:id", deleteTask);
 router.put("/:id", updateTask);
