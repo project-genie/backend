@@ -232,6 +232,7 @@ export async function getOrganizations(req, res) {
       data: organizations,
     });
   } catch (error) {
+    console.log("error: ", error);
     res.status(500).json({
       success: false,
       message: error.message,
