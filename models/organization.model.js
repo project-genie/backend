@@ -22,30 +22,36 @@ export const Organization = sequelize.define(
     },
   },
   {
-    timestamps: true,
+    timestamps: false,
   }
 );
 
 // organization_members
-export const OrganizationMembers = sequelize.define("organization_members", {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
+export const OrganizationMembers = sequelize.define(
+  "organization_members",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    organizationId: {
+      type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter organization id." },
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter user id." },
+    },
+    role: {
+      type: DataTypes.STRING,
+      allowNull: { args: false, msg: "Please enter role." },
+    },
   },
-  organizationId: {
-    type: DataTypes.INTEGER,
-    allowNull: { args: false, msg: "Please enter organization id." },
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: { args: false, msg: "Please enter user id." },
-  },
-  role: {
-    type: DataTypes.STRING,
-    allowNull: { args: false, msg: "Please enter role." },
-  },
-});
+  {
+    timestamps: false,
+  }
+);
 
 // invites
 export const Invite = sequelize.define(
@@ -82,7 +88,7 @@ export const Invite = sequelize.define(
     },
   },
   {
-    timestamps: true,
+    timestamps: false,
   }
 );
 

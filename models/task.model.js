@@ -1,7 +1,6 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/db.config.js";
 import { User } from "./user.model.js";
-import { Project } from "./project.model.js";
 
 // tasks
 export const Task = sequelize.define(
@@ -14,11 +13,9 @@ export const Task = sequelize.define(
     },
     createdBy: {
       type: DataTypes.INTEGER,
-      allowNull: { args: false, msg: "Please enter created by." },
     },
     projectId: {
       type: DataTypes.INTEGER,
-      allowNull: { args: false, msg: "Please enter project id." },
     },
     assigneeId: {
       type: DataTypes.INTEGER,
@@ -33,31 +30,71 @@ export const Task = sequelize.define(
     },
     exception: {
       type: DataTypes.BOOLEAN,
-      allowNull: { args: false, msg: "Please enter task exception." },
       defaultValue: false,
     },
     status: {
-      type: DataTypes.ENUM("backlog", "todo", "in-progress", "done"),
-      allowNull: { args: false, msg: "Please enter task status." },
+      type: DataTypes.ENUM(
+        "backlog",
+        "todo",
+        "in-progress",
+        "done",
+        "completed"
+      ),
       defaultValue: "backlog",
     },
     priority: {
       type: DataTypes.ENUM("low", "medium", "high"),
-      allowNull: { args: false, msg: "Please enter task priority." },
       defaultValue: "medium",
     },
     dueDate: {
       type: DataTypes.DATE,
-      allowNull: { args: false, msg: "Please enter task due date." },
     },
     difficulty: {
       type: DataTypes.INTEGER,
       allowNull: { args: false, msg: "Please enter task difficulty." },
       defaultValue: 3,
     },
+    created_date: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    started_date: {
+      type: DataTypes.DATE,
+    },
   },
   {
-    timestamps: true,
+    timestamps: false,
+  }
+);
+
+export const CompletedTask = sequelize.define(
+  "completed_tasks",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    task_id: {
+      type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter task id." },
+    },
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter completed by." },
+    },
+    started_date: {
+      type: DataTypes.DATE,
+    },
+    completed_date: {
+      type: DataTypes.DATE,
+    },
+    hours: {
+      type: DataTypes.INTEGER,
+    },
+  },
+  {
+    timestamps: false,
   }
 );
 
@@ -69,5 +106,15 @@ Task.belongsTo(User, {
 
 Task.belongsTo(User, {
   foreignKey: "createdBy",
+  targetKey: "id",
+});
+
+CompletedTask.belongsTo(User, {
+  foreignKey: "user_id",
+  targetKey: "id",
+});
+
+CompletedTask.belongsTo(Task, {
+  foreignKey: "task_id",
   targetKey: "id",
 });

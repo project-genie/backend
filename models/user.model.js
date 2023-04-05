@@ -27,7 +27,7 @@ export const User = sequelize.define(
     },
   },
   {
-    timestamps: true,
+    timestamps: false,
   }
 );
 
@@ -57,6 +57,6 @@ export const UserCandidate = sequelize.define(
     },
   },
   {
-    timestamps: true,
+    timestamps: false,
   }
 );
