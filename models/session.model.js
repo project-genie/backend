@@ -20,7 +20,7 @@ export const Session = sequelize.define(
     },
   },
   {
-    timestamps: true,
+    timestamps: false,
   }
 );
 

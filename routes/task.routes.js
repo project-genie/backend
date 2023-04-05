@@ -7,6 +7,7 @@ import {
   getTasksProject,
   getTasksCurrentUser,
   getTasksUser,
+  completeTask,
 } from "../controllers/task.controller.js";
 
 const router = Router();
@@ -15,6 +16,7 @@ const router = Router();
 router.post("/", createTask); // Create a new task.
 router.get("/", getTasksCurrentUser); // Get all tasks of a user.
 
+router.post("/:id/complete", completeTask); // Complete a task.
 router.get("/:id", getTask); // Get a task.
 router.delete("/:id", deleteTask); // Delete a task.
 router.put("/:id", updateTask); // Update a task.

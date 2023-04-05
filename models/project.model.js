@@ -26,30 +26,36 @@ export const Project = sequelize.define(
     },
   },
   {
-    timestamps: true,
+    timestamps: false,
   }
 );
 
 // project_members
-export const ProjectMembers = sequelize.define("project_members", {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
+export const ProjectMembers = sequelize.define(
+  "project_members",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    projectId: {
+      type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter project id." },
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter user id." },
+    },
+    role: {
+      type: DataTypes.STRING,
+      allowNull: { args: false, msg: "Please enter role." },
+    },
   },
-  projectId: {
-    type: DataTypes.INTEGER,
-    allowNull: { args: false, msg: "Please enter project id." },
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: { args: false, msg: "Please enter user id." },
-  },
-  role: {
-    type: DataTypes.STRING,
-    allowNull: { args: false, msg: "Please enter role." },
-  },
-});
+  {
+    timestamps: false,
+  }
+);
 
 // Relationships
 Project.hasMany(ProjectMembers, {

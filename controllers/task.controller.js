@@ -1,4 +1,4 @@
-import { Task } from "../models/task.model.js";
+import { CompletedTask, Task } from "../models/task.model.js";
 import { Project, ProjectMembers } from "../models/project.model.js";
 import { User } from "../models/user.model.js";
 import {
@@ -262,6 +262,70 @@ export async function updateTask(req, res) {
         message: "You are not authorized to perform this action.",
       });
     }
+
+    if (task.status == "completed") {
+      return res.status(403).json({
+        success: false,
+        message: "Task is already completed. Please open another task.",
+      });
+    }
+    // If the assignee is being changed, we set the started_date to null.
+    if (task.assigneeId != assigneeId) {
+      const started_date = null;
+      // Update the task
+      await task.update({
+        name,
+        description,
+        priority,
+        dueDate,
+        difficulty,
+        assigneeId,
+        projectId,
+        exception,
+        status: "todo",
+        started_date,
+      });
+
+      return res.json({
+        success: true,
+        message: "Task updated successfully",
+        data: task,
+      });
+    }
+
+    // If the status is in progress, we set the started_date.
+    if (status == "in-progress") {
+      // Check if the task is already in progress.
+      if (task.status == "in-progress") {
+        return res.status(403).json({
+          success: false,
+          message: "Task is already in progress.",
+        });
+      }
+      if (task.started_date == null) {
+        const started_date = new Date();
+        // Update the task
+        await task.update({
+          name,
+          description,
+          priority,
+          dueDate,
+          difficulty,
+          assigneeId,
+          projectId,
+          exception,
+          status,
+          started_date,
+        });
+
+        return res.json({
+          success: true,
+          message: "Task updated successfully",
+          data: task,
+        });
+      }
+    }
+
     // Update the task
     await task.update({
       name,
@@ -274,10 +338,89 @@ export async function updateTask(req, res) {
       exception,
       status,
     });
+
     return res.json({
       success: true,
       message: "Task updated successfully",
       data: task,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function completeTask(req, res) {
+  // Get the task id from the request params.
+  const taskId = req.params["id"];
+  // Get the user id from the request.
+  const userId = req.user.id;
+
+  try {
+    // Check the existencies.
+    const task = await Task.findByPk(taskId);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found.",
+      });
+    }
+
+    if (task.status !== "in-progress") {
+      return res.status(403).json({
+        success: false,
+        message: "Task is not in progress. First make it in progress.",
+      });
+    }
+
+    // Check if the user is a member of the project.
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId: task.projectId,
+      },
+    });
+    // Check if the user is authorized to perform this action.
+    if (
+      !projectMember ||
+      (userId !== task.assigneeId &&
+        projectMember.role !== "owner" &&
+        userId !== task.createdBy)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to perform this action.",
+      });
+    }
+
+    const diffInMs = Math.abs(new Date() - task.started_date);
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    if (diffInHours === 0) {
+      await task.update({
+        exception: true,
+      });
+    }
+
+    // Update the task
+    const completedTask = await CompletedTask.create({
+      task_id: taskId,
+      user_id: userId,
+      started_date: task.started_date,
+      completed_date: new Date(),
+      hours: diffInHours,
+    });
+
+    // Destroy the task
+    await task.update({
+      status: "completed",
+    });
+
+    return res.json({
+      success: true,
+      message: "Task completed successfully",
+      data: completedTask,
     });
   } catch (error) {
     res.status(500).json({
