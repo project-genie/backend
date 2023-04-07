@@ -92,6 +92,12 @@ export const CompletedTask = sequelize.define(
     hours: {
       type: DataTypes.INTEGER,
     },
+    user_level: {
+      type: DataTypes.INTEGER,
+    },
+    task_difficulty: {
+      type: DataTypes.INTEGER,
+    },
   },
   {
     timestamps: false,

@@ -21,6 +21,10 @@ export const User = sequelize.define(
         isEmail: { args: true, msg: "Please enter a valid email address." },
       },
     },
+    level: {
+      type: DataTypes.INTEGER,
+      defaultValue: 5
+    },
     password: {
       type: DataTypes.STRING,
       allowNull: { args: false, msg: "Please enter your password." },
