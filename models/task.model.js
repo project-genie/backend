@@ -52,7 +52,7 @@ export const Task = sequelize.define(
     difficulty: {
       type: DataTypes.INTEGER,
       allowNull: { args: false, msg: "Please enter task difficulty." },
-      defaultValue: 3,
+      defaultValue: 5,
     },
     created_date: {
       type: DataTypes.DATE,
