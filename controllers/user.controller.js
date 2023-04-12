@@ -97,3 +97,70 @@ export async function getCurrentUserInvites(req, res) {
     return res.status(500).send({ success: false, message: error.message });
   }
 }
+
+/*
+ * Get current user.
+ * @param {Request} {}
+ * @param {Response} {data: user: {id, name, email, level createdAt}}
+ * @returns {Promise<Response>}
+ * */
+export async function getCurrentUser(req, res) {
+  try {
+    // Get the user id from the request.
+    const userId = req.user.id;
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .send({ success: false, message: "User not found." });
+    }
+    return res.send({
+      success: true,
+      message: "User found.",
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        level: user.level,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).send({ success: false, message: error.message });
+  }
+}
+
+/*
+ * Update user.
+ * @param {Request} {params:{id}, body:{name}}
+ * @param {Response} {data: user: {id, name, email, level createdAt}}
+ * @returns {Promise<Response>}
+ * */
+export async function updateUser(req, res) {
+  try {
+    // Get the user id from the request.
+    const id = req.params["id"];
+    const { name } = req.body;
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res
+        .status(404)
+        .send({ success: false, message: "User not found." });
+    }
+    user.name = name;
+    await user.save();
+    return res.send({
+      success: true,
+      message: "User updated.",
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        level: user.level,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).send({ success: false, message: error.message });
+  }
+}

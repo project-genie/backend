@@ -61,6 +61,9 @@ export const Task = sequelize.define(
     started_date: {
       type: DataTypes.DATE,
     },
+    predicted_completion_date: {
+      type: DataTypes.DATE,
+    },
   },
   {
     timestamps: false,
