@@ -8,6 +8,7 @@ import {
   getTasksCurrentUser,
   getTasksUser,
   completeTask,
+  getCompletedTasksProject,
 } from "../controllers/task.controller.js";
 
 const router = Router();
@@ -21,6 +22,7 @@ router.get("/:id", getTask); // Get a task.
 router.delete("/:id", deleteTask); // Delete a task.
 router.put("/:id", updateTask); // Update a task.
 
+router.get("/project/completed/:id", getCompletedTasksProject); // Get all completed tasks of a project.
 router.get("/project/:id", getTasksProject); // Get all tasks of a project.
 router.get("/organization/:id/project/:id/user/:id", getTasksUser); // Get all tasks of a user.
 

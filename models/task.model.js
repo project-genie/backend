@@ -86,6 +86,9 @@ export const CompletedTask = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: { args: false, msg: "Please enter completed by." },
     },
+    project_id: {
+      type: DataTypes.INTEGER,
+    },
     started_date: {
       type: DataTypes.DATE,
     },

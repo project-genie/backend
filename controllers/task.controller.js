@@ -5,6 +5,7 @@ import {
   Organization,
   OrganizationMembers,
 } from "../models/organization.model.js";
+import { Op } from "sequelize";
 
 /*
  * Get a task by id.
@@ -407,6 +408,7 @@ export async function completeTask(req, res) {
     const completedTask = await CompletedTask.create({
       task_id: taskId,
       user_id: userId,
+      project_id: task.projectId,
       started_date: task.started_date,
       completed_date: new Date(),
       hours: diffInHours,
@@ -486,7 +488,11 @@ export async function getTasksProject(req, res) {
     const tasks = await Task.findAll({
       where: {
         projectId,
+        status: {
+          [Op.not]: "completed",
+        },
       },
+      order: [["status", "DESC"]],
     });
     return res.json({
       success: true,
@@ -588,6 +594,77 @@ export async function getTasksUser(req, res) {
       },
     });
 
+    return res.json({
+      success: true,
+      message: "Tasks retrieved successfully",
+      data: tasks,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+/*
+ * Get completed tasks of a project.
+ * @param {Request} {id}
+ * @param {Response} {success, message, data}
+ * @returns {Promise<Response>}
+ */
+export async function getCompletedTasksProject(req, res) {
+  try {
+    // Get the project id from the request params.
+    const projectId = req.params["id"];
+    // Get the user id from the request.
+    const userId = req.user.id;
+
+    // Get the project
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+    // Get the organization
+    const organization = await Organization.findByPk(project.organizationId);
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+
+    // Check if the user is a member of the organization.
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId: organization.id,
+      },
+    });
+
+    // Check if the user is a member of the project.
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId,
+      },
+    });
+
+    if (!projectMember && organizationMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to perform this action.",
+      });
+    }
+
+    const tasks = await CompletedTask.findAll({
+      where: {
+        project_id: projectId,
+      },
+    });
     return res.json({
       success: true,
       message: "Tasks retrieved successfully",

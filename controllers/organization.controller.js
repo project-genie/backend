@@ -275,7 +275,7 @@ export async function getOrganizationMembers(req, res) {
       },
       include: {
         model: User,
-        attributes: ["id", "name", "email"],
+        attributes: ["id", "name", "email", "level"],
       },
     });
     return res.json({
