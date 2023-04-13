@@ -23,7 +23,7 @@ export const User = sequelize.define(
     },
     level: {
       type: DataTypes.INTEGER,
-      defaultValue: 5
+      defaultValue: 5,
     },
     password: {
       type: DataTypes.STRING,

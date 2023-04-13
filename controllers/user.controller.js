@@ -1,6 +1,10 @@
 import { Session } from "../models/session.model.js";
 import { User } from "../models/user.model.js";
-import { Invite, Organization } from "../models/organization.model.js";
+import {
+  Invite,
+  Organization,
+  OrganizationMembers,
+} from "../models/organization.model.js";
 
 /*
  * Logout.
@@ -140,14 +144,56 @@ export async function updateUser(req, res) {
   try {
     // Get the user id from the request.
     const id = req.params["id"];
-    const { name } = req.body;
-    const user = await User.findByPk(id);
-    if (!user) {
-      return res
-        .status(404)
-        .send({ success: false, message: "User not found." });
+    const userId = req.user.id;
+    const { name, level, organizationId } = req.body;
+
+    if (!organizationId) {
+      return res.status(400).send({
+        success: false,
+        message: "Organization id is required.",
+      });
     }
+
+    const organizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+    if (!organizationMember) {
+      return res.status(403).send({
+        success: false,
+        message: "You are not a member of this organization.",
+      });
+    }
+
+    if (organizationMember.role !== "owner") {
+      return res.status(403).send({
+        success: false,
+        message: "You do not have permission to update this user.",
+      });
+    }
+
+    const user = await User.findByPk(id);
+
+    const userOrganizationMember = await OrganizationMembers.findOne({
+      where: {
+        userId: user.id,
+        organizationId,
+      },
+    });
+
+    if (!userOrganizationMember) {
+      return res.status(403).send({
+        success: false,
+        message: "This user is not a member of this organization.",
+      });
+    }
+
     user.name = name;
+    if (level) {
+      user.level = level;
+    }
     await user.save();
     return res.send({
       success: true,
