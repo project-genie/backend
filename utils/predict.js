@@ -7,11 +7,21 @@ export async function predict(userLevel, difficulty){
     
     const predictedHours = response.data['prediction'];
     
-    //const days = Math.floor(predictedHours / 8);
-    //const remainder = predictedHours % 8;
+    //8 hours of working each day from 9:00 to 18:00
+    const days = Math.floor(predictedHours / 8);
+    const remainderHours = predictedHours % 8;
     
-    //add predicted hours to current date
-    currentDate.setHours(currentDate.getHours()+Math.floor(predictedHours));
+    //add days to current date
+    currentDate.setDate(currentDate.getDate()+days);
 
+    //if remainder hours exceed 18:00 add one more day and remaining hours to 9:00
+    if((currentDate.getHours()+remainderHours)>18){
+        currentDate.setDate(currentDate.getDate()+1);
+        currentDate.setHours(currentDate.getHours()+remainderHours-9);
+    }
+    else{
+        currentDate.setHours(currentDate.getHours()+(predictedHours));
+    }
+    
     return currentDate.toISOString();
 }

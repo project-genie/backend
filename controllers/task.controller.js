@@ -127,7 +127,7 @@ export async function createTask(req, res) {
       });
     }
 
-    const predicted_completion_date = await predict(user.level,difficulty);
+    const predicted_completion_date = await predict(user.level,parseInt(difficulty));
     // Create the task.
     const newTask = await Task.create({
       name,
