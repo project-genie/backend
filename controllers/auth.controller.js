@@ -102,20 +102,23 @@ export async function signUpCandidate(req, res) {
       to: email, // Change to your recipient
       from: "mertplayschess@outlook.com", // Change to your verified sender
       subject: "Project Genie User Registration",
-      text:
-        "Please follow the link below to continue to registration process: \n" +
-        "http://localhost:3000/account/signup?secret=" +
-        secret +
-        "&email=" +
-        email,
-      html:
-        "Please follow the link below to continue to registration process: \n" +
-        "http://localhost:3000/account/signup?secret=" +
-        secret +
-        "&email=" +
-        email +
-        "\n" +
-        "If you didn't register, please ignore this email.",
+      html: `
+        <table
+          role="presentation"
+          style="width:602px;border-collapse:collapse;text-align:left;"
+        >
+          <tr>
+            <td style="padding:0;">
+              <h2>Welcome to Project Genie!</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0;">
+              Please <a href="${envConfig.FRONTEND_URL}/account/signup?secret=${secret}&email=${email}">
+              Click here</a> to continue to registration process. If you didn't register, please ignore this email.
+            </td>
+          </tr>
+        </table>`,
     };
 
     sgMail

@@ -11,4 +11,5 @@ export default {
   SENDGRID_KEY: process.env.SENDGRID_KEY,
   OPENAI_SECRET_KEY: process.env.OPENAI_SECRET_KEY,
   OPENAI_ORGANIZATION_ID: process.env.OPENAI_ORGANIZATION_ID,
+  FRONTEND_URL: process.env.FRONTEND_URL,
 };
