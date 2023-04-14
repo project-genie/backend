@@ -6,6 +6,7 @@ import {
   OrganizationMembers,
 } from "../models/organization.model.js";
 import { Op } from "sequelize";
+import { predict } from "../utils/predict.js";
 
 /*
  * Get a task by id.
@@ -125,6 +126,8 @@ export async function createTask(req, res) {
         message: "User not found",
       });
     }
+
+    const predicted_completion_date = await predict(user.level,parseInt(difficulty));
     // Create the task.
     const newTask = await Task.create({
       name,
@@ -135,6 +138,7 @@ export async function createTask(req, res) {
       projectId,
       assigneeId,
       createdBy,
+      predicted_completion_date
     });
 
     return res.json({
