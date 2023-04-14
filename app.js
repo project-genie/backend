@@ -30,9 +30,11 @@ app.use(cookieParser());
 // This middleware will help us to parse the body of the request.
 app.use(express.json());
 
-// This route does not require a user to be logged in. So It won't use cookies because it is before "deserializeUser" middleware.
+// This route does not require a user to be logged in.
+//So It won't use cookies because it is before "deserializeUser" middleware.
 app.use("/api/auth", authRoutes);
-// This middleware will check if the user is logged in. If not, it will send a 401 error. If yes, it will add the user to the request object.
+// This middleware will check if the user is logged in.
+// If not, it will send a 401 error. If yes, it will add the user to the request object.
 app.use(deserializeUser);
 
 // All the routes below this middleware will require a user to be logged in.
