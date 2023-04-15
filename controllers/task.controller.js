@@ -8,6 +8,7 @@ import {
 import { Op } from "sequelize";
 import { predict } from "../utils/predict.js";
 import { Status } from "../models/task.model.js";
+import { Configuration, OpenAIApi } from 'openai';
 
 /*
  * Get a task by id.
@@ -787,6 +788,61 @@ export async function getCompletedTasksProject(req, res) {
       message: "Tasks retrieved successfully",
       data: tasks,
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function getGPTmessage(req,res){
+  // Get the project id from the request params.
+  const taskId = req.params["id"];
+  // Get the user id from the request.
+  const userId = req.user.id;
+
+  try {
+    // Check if the task exists.
+    const task = await Task.findByPk(taskId);
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // Check if the user is a member of the project.
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        userId,
+        projectId: task.projectId,
+      },
+    });
+
+    if (!projectMember) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not a member of this project",
+      });
+    }
+    
+    const configuration = new Configuration({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    const openai = new OpenAIApi(configuration);
+    const gptResponse = await openai.createCompletion({
+      model: "text-davinci-003",
+      prompt: task.description,
+      temperature: 0,
+      max_tokens: 60,
+    });
+    return res.json({
+      success: true,
+      message: "GPT replied",
+      data: gptResponse.data.choices[0].text.trim()
+    });
+
   } catch (error) {
     res.status(500).json({
       success: false,
