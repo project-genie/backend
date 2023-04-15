@@ -278,7 +278,6 @@ export async function updateTask(req, res) {
         : parseInt(task.difficulty);
       const predicted_work_hours = await predict(user.level, diff);
 
-      console.log("our hour: ", predicted_work_hours);
       // Update the task
       await task.update({
         name,
@@ -290,7 +289,7 @@ export async function updateTask(req, res) {
         exception,
         status: Status.TODO,
         started_date,
-        predicted_work_hours,
+        predicted_work_hours: Math.round(predicted_work_hours),
       });
 
       return res.json({
@@ -300,57 +299,146 @@ export async function updateTask(req, res) {
       });
     }
 
-    // If the status is in progress, we set the started_date.
-    if (status == Status.IN_PROGRESS) {
-      // Check if the task is already in progress.
-      if (task.status == Status.IN_PROGRESS) {
-        return res.status(403).json({
-          success: false,
-          message: "Task is already in progress.",
+    if (status != task.status) {
+      // If the status is in progress, we set the started_date.
+      if (status == Status.IN_PROGRESS) {
+        const started_date = new Date();
+
+        const diff = difficulty
+          ? parseInt(difficulty)
+          : parseInt(task.difficulty);
+        const predicted_work_hours = await predict(user.level, diff);
+        //8 hours of working each day from 9:00 to 18:00
+        const days = Math.floor(predicted_work_hours / 8);
+        const remainderHours = predicted_work_hours % 8;
+
+        const currentDate = new Date();
+
+        //add days to current date
+        currentDate.setDate(currentDate.getDate() + days);
+
+        //if remainder hours exceed 18:00 add one more day and remaining hours to 9:00
+        if (currentDate.getHours() + remainderHours > 18) {
+          currentDate.setDate(currentDate.getDate() + 1);
+          currentDate.setHours(currentDate.getHours() + remainderHours - 9);
+        } else {
+          currentDate.setHours(currentDate.getHours() + predicted_work_hours);
+        }
+
+        // Update the task
+        await task.update({
+          name,
+          description,
+          priority,
+          difficulty,
+          assigneeId,
+          projectId,
+          exception,
+          status,
+          started_date,
+          predicted_completion_date: currentDate.toISOString(),
+        });
+
+        return res.json({
+          success: true,
+          message: "Task updated successfully",
+          data: task,
+        });
+      } else if (status == Status.BACKLOG) {
+        const started_date = null;
+        const predicted_completion_date = null;
+        const predicted_work_hours = null;
+        // Update the task
+        await task.update({
+          name,
+          description,
+          priority,
+          difficulty,
+          assigneeId,
+          projectId,
+          exception,
+          status,
+          started_date,
+          predicted_work_hours,
+          predicted_completion_date,
+        });
+
+        return res.json({
+          success: true,
+          message: "Task updated successfully",
+          data: task,
         });
       }
-      const started_date = new Date();
+    }
 
-      const diff = difficulty
-        ? parseInt(difficulty)
-        : parseInt(task.difficulty);
-      const predicted_work_hours = await predict(user.level, diff);
-      //8 hours of working each day from 9:00 to 18:00
-      const days = Math.floor(predicted_work_hours / 8);
-      const remainderHours = predicted_work_hours % 8;
+    if (difficulty != task.difficulty) {
+      if (task.started_date != null) {
+        const diff = difficulty
+          ? parseInt(difficulty)
+          : parseInt(task.difficulty);
 
-      const currentDate = new Date();
+        const predicted_work_hours = await predict(user.level, diff);
+        //8 hours of working each day from 9:00 to 18:00
+        const days = Math.floor(predicted_work_hours / 8);
+        const remainderHours = predicted_work_hours % 8;
 
-      //add days to current date
-      currentDate.setDate(currentDate.getDate() + days);
+        const currentDate = task.started_date;
 
-      //if remainder hours exceed 18:00 add one more day and remaining hours to 9:00
-      if (currentDate.getHours() + remainderHours > 18) {
-        currentDate.setDate(currentDate.getDate() + 1);
-        currentDate.setHours(currentDate.getHours() + remainderHours - 9);
+        //add days to current date
+        currentDate.setDate(currentDate.getDate() + days);
+
+        //if remainder hours exceed 18:00 add one more day and remaining hours to 9:00
+        if (currentDate.getHours() + remainderHours > 18) {
+          currentDate.setDate(currentDate.getDate() + 1);
+          currentDate.setHours(currentDate.getHours() + remainderHours - 9);
+        } else {
+          currentDate.setHours(currentDate.getHours() + predicted_work_hours);
+        }
+
+        // Update the task
+        await task.update({
+          name,
+          description,
+          priority,
+          difficulty,
+          assigneeId,
+          projectId,
+          exception,
+          status,
+          predicted_work_hours: Math.round(predicted_work_hours),
+          predicted_completion_date: currentDate.toISOString(),
+        });
+
+        return res.json({
+          success: true,
+          message: "Task updated successfully",
+          data: task,
+        });
       } else {
-        currentDate.setHours(currentDate.getHours() + predicted_work_hours);
+        const diff = difficulty
+          ? parseInt(difficulty)
+          : parseInt(task.difficulty);
+        const predicted_work_hours = await predict(user.level, diff);
+
+        // Update the task
+        await task.update({
+          name,
+          description,
+          priority,
+          difficulty,
+          assigneeId,
+          projectId,
+          exception,
+          status,
+          predicted_work_hours: Math.round(predicted_work_hours),
+        });
+
+        return res.json({
+          success: true,
+          message: "Task updated successfully",
+          data: task,
+        });
       }
-
-      // Update the task
-      await task.update({
-        name,
-        description,
-        priority,
-        difficulty,
-        assigneeId,
-        projectId,
-        exception,
-        status,
-        started_date,
-        predicted_completion_date: currentDate.toISOString(),
-      });
-
-      return res.json({
-        success: true,
-        message: "Task updated successfully",
-        data: task,
-      });
     }
 
     // Update the task
