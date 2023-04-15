@@ -7,6 +7,7 @@ import {
 } from "../models/organization.model.js";
 import { Op } from "sequelize";
 import { predict } from "../utils/predict.js";
+import { Status } from "../models/task.model.js";
 
 /*
  * Get a task by id.
@@ -60,23 +61,15 @@ export async function getTask(req, res) {
 
 /*
  * Create Task.
- * @param {Request} {name, description, priority, dueDate, difficulty, assigneeId, projectId, createdBy}
+ * @param {Request} {name, description, priority, difficulty, assigneeId, projectId, createdBy}
  * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the project members can create tasks.
  */
 export async function createTask(req, res) {
   // Get the parameters from the request body.
-  const {
-    assigneeId,
-    projectId,
-    name,
-    description,
-    priority,
-    dueDate,
-    difficulty,
-    createdBy,
-  } = req.body;
+  const { assigneeId, projectId, name, description, priority, difficulty } =
+    req.body;
   // Get the user id from the request.
   const userId = req.user.id;
   try {
@@ -127,18 +120,20 @@ export async function createTask(req, res) {
       });
     }
 
-    const predicted_completion_date = await predict(user.level,parseInt(difficulty));
+    const predicted_work_hours = await predict(
+      user.level,
+      parseInt(difficulty)
+    );
     // Create the task.
     const newTask = await Task.create({
       name,
       description,
       priority,
-      dueDate,
       difficulty,
       projectId,
       assigneeId,
-      createdBy,
-      predicted_completion_date
+      createdBy: userId,
+      predicted_work_hours: Math.round(predicted_work_hours),
     });
 
     return res.json({
@@ -214,11 +209,10 @@ export async function deleteTask(req, res) {
 
 /*
  * Update task of a project.
- * @param {Request} {id, name, description, priority, dueDate, difficulty, assigneeId, projectId, exception, status}
+ * @param {Request} {id, name, description, priority, difficulty, assigneeId, projectId, exception, status}
  * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the manager of the project, creator of the task AND the assignee of the task can update the task.
-   TODO: If status is being 'completed', we may need to perform additional actions. Such as calculating the time taken to complete the task. It will determine the performance of the assignee.
  * */
 export async function updateTask(req, res) {
   // Get the task id from the request params.
@@ -230,7 +224,6 @@ export async function updateTask(req, res) {
     name,
     description,
     priority,
-    dueDate,
     difficulty,
     assigneeId,
     projectId,
@@ -274,21 +267,30 @@ export async function updateTask(req, res) {
         message: "Task is already completed. Please open another task.",
       });
     }
+
+    const user = await User.findByPk(assigneeId);
+
     // If the assignee is being changed, we set the started_date to null.
     if (task.assigneeId != assigneeId) {
       const started_date = null;
+      const diff = difficulty
+        ? parseInt(difficulty)
+        : parseInt(task.difficulty);
+      const predicted_work_hours = await predict(user.level, diff);
+
+      console.log("our hour: ", predicted_work_hours);
       // Update the task
       await task.update({
         name,
         description,
         priority,
-        dueDate,
         difficulty,
         assigneeId,
         projectId,
         exception,
-        status: "todo",
+        status: Status.TODO,
         started_date,
+        predicted_work_hours,
       });
 
       return res.json({
@@ -299,36 +301,56 @@ export async function updateTask(req, res) {
     }
 
     // If the status is in progress, we set the started_date.
-    if (status == "in-progress") {
+    if (status == Status.IN_PROGRESS) {
       // Check if the task is already in progress.
-      if (task.status == "in-progress") {
+      if (task.status == Status.IN_PROGRESS) {
         return res.status(403).json({
           success: false,
           message: "Task is already in progress.",
         });
       }
-      if (task.started_date == null) {
-        const started_date = new Date();
-        // Update the task
-        await task.update({
-          name,
-          description,
-          priority,
-          dueDate,
-          difficulty,
-          assigneeId,
-          projectId,
-          exception,
-          status,
-          started_date,
-        });
+      const started_date = new Date();
 
-        return res.json({
-          success: true,
-          message: "Task updated successfully",
-          data: task,
-        });
+      const diff = difficulty
+        ? parseInt(difficulty)
+        : parseInt(task.difficulty);
+      const predicted_work_hours = await predict(user.level, diff);
+      //8 hours of working each day from 9:00 to 18:00
+      const days = Math.floor(predicted_work_hours / 8);
+      const remainderHours = predicted_work_hours % 8;
+
+      const currentDate = new Date();
+
+      //add days to current date
+      currentDate.setDate(currentDate.getDate() + days);
+
+      //if remainder hours exceed 18:00 add one more day and remaining hours to 9:00
+      if (currentDate.getHours() + remainderHours > 18) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setHours(currentDate.getHours() + remainderHours - 9);
+      } else {
+        currentDate.setHours(currentDate.getHours() + predicted_work_hours);
       }
+
+      // Update the task
+      await task.update({
+        name,
+        description,
+        priority,
+        difficulty,
+        assigneeId,
+        projectId,
+        exception,
+        status,
+        started_date,
+        predicted_completion_date: currentDate.toISOString(),
+      });
+
+      return res.json({
+        success: true,
+        message: "Task updated successfully",
+        data: task,
+      });
     }
 
     // Update the task
@@ -336,7 +358,6 @@ export async function updateTask(req, res) {
       name,
       description,
       priority,
-      dueDate,
       difficulty,
       assigneeId,
       projectId,
@@ -408,6 +429,7 @@ export async function completeTask(req, res) {
       });
     }
 
+    const user = await User.findByPk(task.assigneeId);
     // Update the task
     const completedTask = await CompletedTask.create({
       task_id: taskId,
@@ -416,11 +438,14 @@ export async function completeTask(req, res) {
       started_date: task.started_date,
       completed_date: new Date(),
       hours: diffInHours,
+      exception: task.exception,
+      user_level: user.level,
+      difficulty: task.difficulty,
     });
 
     // Destroy the task
     await task.update({
-      status: "completed",
+      status: Status.COMPLETED,
     });
 
     return res.json({
@@ -493,7 +518,7 @@ export async function getTasksProject(req, res) {
       where: {
         projectId,
         status: {
-          [Op.not]: "completed",
+          [Op.not]: Status.COMPLETED,
         },
       },
       order: [["status", "DESC"]],

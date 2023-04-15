@@ -2,6 +2,14 @@ import { DataTypes } from "sequelize";
 import { sequelize } from "../config/db.config.js";
 import { User } from "./user.model.js";
 
+export const Status = {
+  BACKLOG: "backlog",
+  TODO: "todo",
+  IN_PROGRESS: "in-progress",
+  DONE: "done",
+  COMPLETED: "completed",
+};
+
 // tasks
 export const Task = sequelize.define(
   "tasks",
@@ -33,21 +41,12 @@ export const Task = sequelize.define(
       defaultValue: false,
     },
     status: {
-      type: DataTypes.ENUM(
-        "backlog",
-        "todo",
-        "in-progress",
-        "done",
-        "completed"
-      ),
+      type: DataTypes.ENUM("backlog", "todo", "in-progress", "completed"),
       defaultValue: "backlog",
     },
     priority: {
       type: DataTypes.ENUM("low", "medium", "high"),
       defaultValue: "medium",
-    },
-    dueDate: {
-      type: DataTypes.DATE,
     },
     difficulty: {
       type: DataTypes.INTEGER,
@@ -63,6 +62,9 @@ export const Task = sequelize.define(
     },
     predicted_completion_date: {
       type: DataTypes.DATE,
+    },
+    predicted_work_hours: {
+      type: DataTypes.INTEGER,
     },
   },
   {
@@ -103,6 +105,9 @@ export const CompletedTask = sequelize.define(
     },
     task_difficulty: {
       type: DataTypes.INTEGER,
+    },
+    exception: {
+      type: DataTypes.BOOLEAN,
     },
   },
   {
