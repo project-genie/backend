@@ -8,7 +8,8 @@ import {
 import { Op } from "sequelize";
 import { predict } from "../utils/predict.js";
 import { Status } from "../models/task.model.js";
-import { Configuration, OpenAIApi } from 'openai';
+import { Configuration, OpenAIApi } from "openai";
+import envConfig from "../config/env.config.js";
 
 /*
  * Get a task by id.
@@ -796,7 +797,7 @@ export async function getCompletedTasksProject(req, res) {
   }
 }
 
-export async function getGPTmessage(req,res){
+export async function getGPTmessage(req, res) {
   // Get the project id from the request params.
   const taskId = req.params["id"];
   // Get the user id from the request.
@@ -826,23 +827,22 @@ export async function getGPTmessage(req,res){
         message: "You are not a member of this project",
       });
     }
-    
+
     const configuration = new Configuration({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: envConfig.OPENAI_API_KEY,
     });
     const openai = new OpenAIApi(configuration);
     const gptResponse = await openai.createCompletion({
       model: "text-davinci-003",
       prompt: task.description,
-      temperature: 0,
-      max_tokens: 60,
+      temperature: 1,
+      max_tokens: 100,
     });
     return res.json({
       success: true,
       message: "GPT replied",
-      data: gptResponse.data.choices[0].text.trim()
+      data: gptResponse.data.choices[0].text.trim(),
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
