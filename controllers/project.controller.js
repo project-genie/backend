@@ -4,6 +4,10 @@ import {
   Organization,
   OrganizationMembers,
 } from "../models/organization.model.js";
+import {
+  isOrganizationMember,
+  isOrganizationOwner,
+} from "../utils/authorization.js";
 
 /*
  * Create a project.
@@ -19,17 +23,10 @@ export async function createProject(req, res) {
   const userId = req.user.id;
   try {
     // Authorization check
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId,
-      },
-    });
-
-    if (!organizationMember || organizationMember.role !== "owner") {
+    if (!isOrganizationOwner(organizationId, userId)) {
       return res.status(403).json({
         success: false,
-        message: "You are unauthorized.",
+        message: "You are unauthorized to perform this action.",
       });
     }
 
@@ -91,14 +88,7 @@ export async function deleteProject(req, res) {
     }
 
     // Authorization check
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId: project.organizationId,
-      },
-    });
-
-    if (!organizationMember || organizationMember.role !== "owner") {
+    if (!isOrganizationOwner(organizationId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized to perform this action.",
@@ -144,14 +134,7 @@ export async function updateProject(req, res) {
       });
     }
     // Authorization check
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId: project.organizationId,
-      },
-    });
-
-    if (!organizationMember || organizationMember.role !== "owner") {
+    if (!isOrganizationOwner(project.organizationId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized to perform this action.",
@@ -223,15 +206,7 @@ export async function getProjectsOrganization(req, res) {
   const userId = req.user.id;
   try {
     // Authorization check
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId,
-      },
-    });
-
-    // If the user is not a member of the organization.
-    if (!organizationMember) {
+    if (!isOrganizationMember(organizationId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized to perform this action.",
@@ -332,14 +307,7 @@ export async function addProjectMember(req, res) {
   try {
     // Authorization check
     const project = await Project.findByPk(projectId);
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId: currentUserId,
-        organizationId: project.organizationId,
-      },
-    });
-
-    if (!organizationMember || organizationMember.role !== "owner") {
+    if (!isOrganizationOwner(project.organizationId, currentUserId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized to perform this action.",
@@ -394,14 +362,7 @@ export async function removeProjectMember(req, res) {
   const currentUserId = req.user.id;
   try {
     const project = await Project.findByPk(projectId);
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId: currentUserId,
-        organizationId: project.organizationId,
-      },
-    });
-
-    if (!organizationMember || organizationMember.role !== "owner") {
+    if (!isOrganizationOwner(project.organizationId, currentUserId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized to perform this action.",
@@ -453,14 +414,7 @@ export async function updateProjectMember(req, res) {
   try {
     // Authorization check
     const project = await Project.findByPk(projectId);
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId: currentUserId,
-        organizationId: project.organizationId,
-      },
-    });
-
-    if (!organizationMember || organizationMember.role !== "owner") {
+    if (!isOrganizationOwner(project.organizationId, currentUserId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized to perform this action.",
