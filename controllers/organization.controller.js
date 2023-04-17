@@ -7,6 +7,10 @@ import { User } from "../models/user.model.js";
 import { v4 as uuidv4 } from "uuid";
 import sgMail from "@sendgrid/mail";
 import envConfig from "../config/env.config.js";
+import {
+  isOrganizationMember,
+  isOrganizationOwner,
+} from "../utils/authorization.js";
 
 /*
  * @param {Request} {body: {name, description}, user: {id}}
@@ -63,15 +67,7 @@ export async function deleteOrganization(req, res) {
   // Get the current user id from the request object.
   const userId = req.user.id;
   try {
-    // Authorization check
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId,
-      },
-    });
-
-    if (!organizationMember || organizationMember.role !== "owner") {
+    if (!isOrganizationOwner(organizationId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized.",
@@ -113,14 +109,7 @@ export async function getOrganization(req, res) {
   const userId = req.user.id;
   try {
     // Authorization check
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId,
-      },
-    });
-
-    if (!organizationMember) {
+    if (!isOrganizationMember(organizationId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized.",
@@ -166,14 +155,7 @@ export async function updateOrganization(req, res) {
 
   try {
     // Authorization check
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId,
-      },
-    });
-
-    if (!organizationMember || organizationMember.role !== "owner") {
+    if (!isOrganizationOwner(organizationId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized.",
@@ -255,17 +237,10 @@ export async function getOrganizationMembers(req, res) {
   const userId = req.user.id;
   try {
     // Authorization check.
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId,
-      },
-    });
-
-    if (!organizationMember) {
+    if (!isOrganizationMember(organizationId, userId)) {
       return res.status(403).json({
         success: false,
-        message: "You are unauthorized to perform this action.",
+        message: "You are unauthorized.",
       });
     }
     // Find all users where the user is a member of the organization.
@@ -310,17 +285,10 @@ export async function inviteUserToOrganization(req, res) {
 
   try {
     // Authorization check.
-    const currentUser = await OrganizationMembers.findOne({
-      where: {
-        organizationId,
-        userId,
-      },
-    });
-
-    if (!currentUser || currentUser.role !== "owner") {
-      return res.status(401).json({
+    if (!isOrganizationOwner(organizationId, userId)) {
+      return res.status(403).json({
         success: false,
-        message: "You are unauthorized to perform this action.",
+        message: "You are unauthorized.",
       });
     }
 
@@ -524,17 +492,11 @@ export async function removeOrganizationMember(req, res) {
 
   try {
     // Authorization check.
-    const currentUser = await OrganizationMembers.findOne({
-      where: {
-        organizationId,
-        userId: currentUserId,
-      },
-    });
-
-    if (!currentUser || currentUser.role !== "owner") {
+    if (!isOrganizationOwner(currentUserId, organizationId)) {
       return res.status(401).json({
         success: false,
-        message: "You are unauthorized to perform this action.",
+        message:
+          "You are not authorized to remove a member from the organization.",
       });
     }
 
@@ -592,17 +554,11 @@ export async function updateOrganizationMember(req, res) {
   const currentUserId = req.user.id;
   try {
     // Authorization check.
-    const currentUser = await OrganizationMembers.findOne({
-      where: {
-        organizationId,
-        userId: currentUserId,
-      },
-    });
-
-    if (!currentUser || currentUser.role !== "owner") {
+    if (!isOrganizationOwner(organizationId, currentUserId)) {
       return res.status(401).json({
         success: false,
-        message: "You are unauthorized to perform this action.",
+        message:
+          "You are not authorized to update a member's role in the organization.",
       });
     }
 
@@ -711,17 +667,11 @@ export async function getOrganizationInvites(req, res) {
 
   try {
     // Authorization check.
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId,
-      },
-    });
-
-    if (!organizationMember && organizationMember.role !== "owner") {
+    if (!isOrganizationOwner(organizationId, userId)) {
       return res.status(401).json({
         success: false,
-        message: "You are unauthorized to perform this action.",
+        message:
+          "You are not authorized to view invites for this organization.",
       });
     }
 
@@ -756,17 +706,10 @@ export async function removeInvitation(req, res) {
   const currentUserId = req.user.id;
 
   try {
-    const currentUser = await OrganizationMembers.findOne({
-      where: {
-        organizationId,
-        userId: currentUserId,
-      },
-    });
-
-    if (!currentUser || currentUser.role !== "owner") {
+    if (!isOrganizationOwner(organizationId, currentUserId)) {
       return res.status(401).json({
         success: false,
-        message: "You are unauthorized to perform this action.",
+        message: "You are not authorized to remove this invite.",
       });
     }
 

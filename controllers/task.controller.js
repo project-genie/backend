@@ -10,6 +10,7 @@ import { predict } from "../utils/predict.js";
 import { Status } from "../models/task.model.js";
 import { Configuration, OpenAIApi } from "openai";
 import envConfig from "../config/env.config.js";
+import { isProjectMember } from "../utils/authorization.js";
 
 /*
  * Get a task by id.
@@ -34,14 +35,7 @@ export async function getTask(req, res) {
     }
 
     // Check if the user is a member of the project.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId,
-        projectId: task.projectId,
-      },
-    });
-
-    if (!projectMember) {
+    if (!isProjectMember(task.projectId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are not a member of this project",
@@ -76,14 +70,7 @@ export async function createTask(req, res) {
   const userId = req.user.id;
   try {
     // Check if the user is a member of the project.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId,
-        projectId,
-      },
-    });
-
-    if (!projectMember) {
+    if (!isProjectMember(projectId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are not a member of this project",
@@ -91,14 +78,7 @@ export async function createTask(req, res) {
     }
 
     // Check if the assignee is a member of the project.
-    const assigneeMember = await ProjectMembers.findOne({
-      where: {
-        userId: assigneeId,
-        projectId,
-      },
-    });
-
-    if (!assigneeMember) {
+    if (!isProjectMember(projectId, assigneeId)) {
       return res.status(403).json({
         success: false,
         message: "The assignee is not a member of this project",
@@ -174,23 +154,10 @@ export async function deleteTask(req, res) {
       });
     }
     // Check if the user is a member of the project.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId,
-        projectId: task.projectId,
-      },
-    });
-
-    // Check if the user is authorized to perform this action.
-    if (
-      !projectMember ||
-      (userId !== task.assigneeId &&
-        projectMember.role !== "owner" &&
-        userId !== task.createdBy)
-    ) {
+    if (!isProjectMember(task.projectId, userId)) {
       return res.status(403).json({
         success: false,
-        message: "You are not authorized to perform this action.",
+        message: "You are not a member of this project",
       });
     }
 
@@ -244,22 +211,10 @@ export async function updateTask(req, res) {
     }
 
     // Check if the user is a member of the project.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId,
-        projectId: task.projectId,
-      },
-    });
-    // Check if the user is authorized to perform this action.
-    if (
-      !projectMember ||
-      (userId !== task.assigneeId &&
-        projectMember.role !== "owner" &&
-        userId !== task.createdBy)
-    ) {
+    if (!isProjectMember(task.projectId, userId)) {
       return res.status(403).json({
         success: false,
-        message: "You are not authorized to perform this action.",
+        message: "You are not a member of this project.",
       });
     }
 
@@ -492,22 +447,10 @@ export async function completeTask(req, res) {
     }
 
     // Check if the user is a member of the project.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId,
-        projectId: task.projectId,
-      },
-    });
-    // Check if the user is authorized to perform this action.
-    if (
-      !projectMember ||
-      (userId !== task.assigneeId &&
-        projectMember.role !== "owner" &&
-        userId !== task.createdBy)
-    ) {
+    if (!isProjectMember(task.projectId, userId)) {
       return res.status(403).json({
         success: false,
-        message: "You are not authorized to perform this action.",
+        message: "You are not a member of the project.",
       });
     }
 
@@ -677,22 +620,7 @@ export async function getTasksUser(req, res) {
     const user = await User.findByPk(userId);
 
     // Check if the user is a member of the organization.
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId: currentUserId,
-        organizationId: organization.id,
-      },
-    });
-
-    // Check if the user is a member of the project.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId: currentUserId,
-        projectId,
-      },
-    });
-
-    if (!projectMember || organizationMember.role !== "owner") {
+    if (!isProjectMember(projectId, currentUserId)) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to perform this action.",
@@ -757,22 +685,7 @@ export async function getCompletedTasksProject(req, res) {
     }
 
     // Check if the user is a member of the organization.
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId: organization.id,
-      },
-    });
-
-    // Check if the user is a member of the project.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId,
-        projectId,
-      },
-    });
-
-    if (!projectMember && organizationMember.role !== "owner") {
+    if (!isProjectMember(projectId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to perform this action.",
@@ -814,17 +727,10 @@ export async function getGPTmessage(req, res) {
     }
 
     // Check if the user is a member of the project.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId,
-        projectId: task.projectId,
-      },
-    });
-
-    if (!projectMember) {
+    if (!isProjectMember(task.projectId, userId)) {
       return res.status(403).json({
         success: false,
-        message: "You are not a member of this project",
+        message: "You are not authorized to perform this action.",
       });
     }
 
