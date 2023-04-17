@@ -1,5 +1,5 @@
 import { OrganizationMembers } from "../models/organization.model.js";
-import { ProjectMembers, Projects } from "../models/project.model.js";
+import { ProjectMembers, Project } from "../models/project.model.js";
 
 export async function isOrganizationMember(organizationId, userId) {
   try {
@@ -39,7 +39,7 @@ export async function isProjectMember(projectId, userId) {
       where: { projectId, userId },
     });
 
-    const project = await Projects.findOne({
+    const project = await Project.findOne({
       where: { id: projectId },
     });
 
@@ -67,7 +67,7 @@ export async function isProjectOwner(projectId, userId) {
       where: { projectId, userId },
     });
 
-    const project = await Projects.findOne({
+    const project = await Project.findOne({
       where: { id: projectId },
     });
 
