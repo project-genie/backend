@@ -7,6 +7,8 @@ import {
 import {
   isOrganizationMember,
   isOrganizationOwner,
+  isProjectMember,
+  isProjectOwner,
 } from "../utils/authorization.js";
 
 /*
@@ -246,22 +248,7 @@ export async function getProjectMembers(req, res) {
   const userId = req.user.id;
   try {
     // Authorization check
-    const project = await Project.findByPk(projectId);
-    const organizationMember = await OrganizationMembers.findOne({
-      where: {
-        userId,
-        organizationId: project.organizationId,
-      },
-    });
-    // If the user is not a member of the organization.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId,
-        projectId,
-      },
-    });
-
-    if (!projectMember && organizationMember.role !== "owner") {
+    if (!isProjectMember(projectId, userId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized to perform this action.",
@@ -314,19 +301,13 @@ export async function addProjectMember(req, res) {
       });
     }
     // Check if the user is already a member of the project.
-    const projectMember = await ProjectMembers.findOne({
-      where: {
-        userId,
-        projectId,
-      },
-    });
-
-    if (projectMember) {
+    if (isProjectMember(projectId, userId)) {
       return res.status(400).json({
         success: false,
         message: "User is already a member of the project",
       });
     }
+
     // Add the user to the project.
     await ProjectMembers.create({
       userId,
@@ -363,6 +344,13 @@ export async function removeProjectMember(req, res) {
   try {
     const project = await Project.findByPk(projectId);
     if (!isOrganizationOwner(project.organizationId, currentUserId)) {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+
+    if (!isProjectOwner(projectId, currentUserId)) {
       return res.status(403).json({
         success: false,
         message: "You are unauthorized to perform this action.",
