@@ -39,18 +39,6 @@ export async function isProjectMember(projectId, userId) {
       where: { projectId, userId },
     });
 
-    const project = await Project.findOne({
-      where: { id: projectId },
-    });
-
-    const organizationMember = await OrganizationMembers.findOne({
-      where: { organizationId: project.organizationId, userId },
-    });
-
-    if (organizationMember.role === "owner") {
-      return true;
-    }
-
     if (!projectMember) {
       return false;
     }

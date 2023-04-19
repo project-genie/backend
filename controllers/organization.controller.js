@@ -12,6 +12,9 @@ import {
   isOrganizationOwner,
 } from "../utils/authorization.js";
 
+import { Project, ProjectMembers } from "../models/project.model.js";
+import { addProjectMember } from "./project.controller.js";
+
 /*
  * @param {Request} {body: {name, description}, user: {id}}
  * @param {Response} {success, message, data}
@@ -598,6 +601,22 @@ export async function updateOrganizationMember(req, res) {
     await organizationMember.update({
       role,
     });
+
+    if (role === "owner") {
+      const projects = await Project.findAll({
+        where: {
+          organizationId,
+        },
+      });
+
+      for (const project of projects) {
+        await ProjectMembers.create({
+          userId,
+          projectId: project.id,
+          role: "owner",
+        });
+      }
+    }
 
     return res.json({
       success: true,

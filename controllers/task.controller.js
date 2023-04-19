@@ -10,7 +10,10 @@ import { predict } from "../utils/predict.js";
 import { Status } from "../models/task.model.js";
 import { Configuration, OpenAIApi } from "openai";
 import envConfig from "../config/env.config.js";
-import { isProjectMember } from "../utils/authorization.js";
+import {
+  isOrganizationOwner,
+  isProjectMember,
+} from "../utils/authorization.js";
 
 /*
  * Get a task by id.
@@ -210,6 +213,15 @@ export async function updateTask(req, res) {
       });
     }
 
+    if (assigneeId) {
+      if (assigneeId !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not allowed to update this task.",
+        });
+      }
+    }
+
     // Check if the user is a member of the project.
     if (!isProjectMember(task.projectId, userId)) {
       return res.status(403).json({
@@ -304,7 +316,6 @@ export async function updateTask(req, res) {
       } else if (status == Status.BACKLOG) {
         const started_date = null;
         const predicted_completion_date = null;
-        const predicted_work_hours = null;
         // Update the task
         await task.update({
           name,
@@ -316,7 +327,6 @@ export async function updateTask(req, res) {
           exception,
           status,
           started_date,
-          predicted_work_hours,
           predicted_completion_date,
         });
 

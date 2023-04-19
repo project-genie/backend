@@ -21,13 +21,14 @@ export const Task = sequelize.define(
     },
     createdBy: {
       type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter task created by." },
     },
     projectId: {
       type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter project id." },
     },
     assigneeId: {
       type: DataTypes.INTEGER,
-      allowNull: { args: false, msg: "Please enter task assigned to." },
     },
     name: {
       type: DataTypes.STRING,
@@ -42,10 +43,12 @@ export const Task = sequelize.define(
     },
     status: {
       type: DataTypes.ENUM("backlog", "todo", "in-progress", "completed"),
+      allowNull: { args: false, msg: "Please enter task status." },
       defaultValue: "backlog",
     },
     priority: {
       type: DataTypes.ENUM("low", "medium", "high"),
+      allowNull: { args: false, msg: "Please enter task priority." },
       defaultValue: "medium",
     },
     difficulty: {
@@ -90,6 +93,7 @@ export const CompletedTask = sequelize.define(
     },
     project_id: {
       type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter project id." },
     },
     started_date: {
       type: DataTypes.DATE,
@@ -105,9 +109,11 @@ export const CompletedTask = sequelize.define(
     },
     task_difficulty: {
       type: DataTypes.INTEGER,
+      allowNull: { args: false, msg: "Please enter task difficulty." },
     },
     exception: {
       type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
   },
   {

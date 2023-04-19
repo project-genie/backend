@@ -54,6 +54,27 @@ export async function createProject(req, res) {
       role: "owner",
     });
 
+    // Add all organization owners as owners of the project.
+    const owners = await OrganizationMembers.findAll({
+      where: {
+        organizationId,
+        role: "owner",
+      },
+      include: {
+        model: User,
+        attributes: ["id", "name", "email"],
+      },
+    });
+
+    for (const owner of owners) {
+      if (owner.user.id === userId) continue;
+      await ProjectMembers.create({
+        projectId: newProject.id,
+        userId: owner.user.id,
+        role: "owner",
+      });
+    }
+
     return res.json({
       success: true,
       message: "Project created successfully",
@@ -301,7 +322,7 @@ export async function addProjectMember(req, res) {
       });
     }
     // Check if the user is already a member of the project.
-    if (isProjectMember(projectId, userId)) {
+    if (isProjectMember(projectId, userId) === true) {
       return res.status(400).json({
         success: false,
         message: "User is already a member of the project",
