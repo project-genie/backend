@@ -63,6 +63,7 @@ export async function getUser(req, res) {
         id: user.id,
         name: user.name,
         email: user.email,
+        level: user.level,
         createdAt: user.createdAt,
       },
     });

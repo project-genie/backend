@@ -1,4 +1,4 @@
-import { CompletedTask, Task } from "../models/task.model.js";
+import { CompletedTask, Task, TaskCandidate } from "../models/task.model.js";
 import { Project, ProjectMembers } from "../models/project.model.js";
 import { User } from "../models/user.model.js";
 import {
@@ -10,10 +10,7 @@ import { predict } from "../utils/predict.js";
 import { Status } from "../models/task.model.js";
 import { Configuration, OpenAIApi } from "openai";
 import envConfig from "../config/env.config.js";
-import {
-  isOrganizationOwner,
-  isProjectMember,
-} from "../utils/authorization.js";
+import { isProjectMember, isProjectOwner } from "../utils/authorization.js";
 
 /*
  * Get a task by id.
@@ -58,17 +55,40 @@ export async function getTask(req, res) {
   }
 }
 
+export async function getUsersTaskCandidates(req, res) {
+  // Get the user id from the request.
+  const userId = req.user.id;
+
+  try {
+    const taskCandidates = await TaskCandidate.findAll({
+      where: {
+        assigneeId: userId,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Task candidates found",
+      data: taskCandidates,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 /*
- * Create Task.
- * @param {Request} {name, description, priority, difficulty, assigneeId, projectId, createdBy}
+ * Create Task Candidate.
+ * @param {Request} {name, description, projectId}
  * @param {Response} {success, message, data}
  * @returns {Promise<Response>}
  * Only the project members can create tasks.
  */
-export async function createTask(req, res) {
+export async function createTaskCandidate(req, res) {
   // Get the parameters from the request body.
-  const { assigneeId, projectId, name, description, priority, difficulty } =
-    req.body;
+  const { projectId, name, description } = req.body;
   // Get the user id from the request.
   const userId = req.user.id;
   try {
@@ -80,14 +100,6 @@ export async function createTask(req, res) {
       });
     }
 
-    // Check if the assignee is a member of the project.
-    if (!isProjectMember(projectId, assigneeId)) {
-      return res.status(403).json({
-        success: false,
-        message: "The assignee is not a member of this project",
-      });
-    }
-
     // Check if project or user exists.
     const project = await Project.findByPk(projectId);
     if (!project) {
@@ -96,35 +108,116 @@ export async function createTask(req, res) {
         message: "Project not found",
       });
     }
-    // Check if the user exists.
-    const user = await User.findByPk(assigneeId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
 
-    const predicted_work_hours = await predict(
-      user.level,
-      parseInt(difficulty)
-    );
+    // const predicted_work_hours = await predict(
+    //   user.level,
+    //   parseInt(difficulty)
+    // );
     // Create the task.
-    const newTask = await Task.create({
+    const newTaskCandidate = await TaskCandidate.create({
       name,
       description,
-      priority,
-      difficulty,
       projectId,
-      assigneeId,
-      createdBy: userId,
-      predicted_work_hours: Math.round(predicted_work_hours),
+      assigneeId: userId,
     });
 
     return res.json({
       success: true,
-      message: "Task created successfully",
+      message: "Task candidate created successfully.",
+      data: newTaskCandidate,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+/*
+ * Accept Task.
+ * @param {Request} {taskCandidateId, difficulty, priority}
+ * @param {Response} {success, message, data}
+ * @returns {Promise<Response>}
+ * Only the project members can create tasks.
+ * */
+export async function acceptTaskCandidate(req, res) {
+  // Get the parameters from the request body.
+  const { difficulty, priority } = req.body;
+  const taskCandidateId = req.params["id"];
+  // Get the user id from the request.
+  const userId = req.user.id;
+  try {
+    const taskCandidate = await TaskCandidate.findByPk(taskCandidateId);
+    // Check if the user is a member of the project.
+    if (!isProjectOwner(taskCandidate.projectId, userId)) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not an owner of this project",
+      });
+    }
+
+    // Check if project or user exists.
+    const project = await Project.findByPk(taskCandidate.projectId);
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const assignee = await User.findByPk(taskCandidate.assigneeId);
+
+    const predicted_work_hours = await predict(
+      assignee.level,
+      parseInt(difficulty)
+    );
+    const newTask = await Task.create({
+      name: taskCandidate.name,
+      description: taskCandidate.description,
+      projectId: taskCandidate.projectId,
+      assigneeId: taskCandidate.assigneeId,
+      difficulty,
+      priority,
+      predicted_work_hours: parseInt(predicted_work_hours),
+      approved_by: userId,
+    });
+
+    await taskCandidate.destroy();
+
+    return res.status(200).json({
+      success: true,
+      message: "Task created successfully.",
       data: newTask,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function rejectTaskCandidate(req, res) {
+  // Get the parameters from the request body.
+  const { taskCandidateId } = req.body;
+  // Get the user id from the request.
+  const userId = req.user.id;
+  try {
+    const taskCandidate = await TaskCandidate.findByPk(taskCandidateId);
+    // Check if the user is a member of the project.
+    if (!isProjectOwner(taskCandidate.projectId, userId)) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not an owner of this project",
+      });
+    }
+
+    await taskCandidate.destroy();
+
+    return res.json({
+      success: true,
+      message: "Task candidate rejected successfully.",
     });
   } catch (error) {
     res.status(500).json({
@@ -186,22 +279,13 @@ export async function deleteTask(req, res) {
  * @returns {Promise<Response>}
  * Only the manager of the project, creator of the task AND the assignee of the task can update the task.
  * */
-export async function updateTask(req, res) {
+export async function updateTaskStatus(req, res) {
   // Get the task id from the request params.
   const taskId = req.params["id"];
   // Get the user id from the request.
   const userId = req.user.id;
   // Get the parameters from the request body.
-  const {
-    name,
-    description,
-    priority,
-    difficulty,
-    assigneeId,
-    projectId,
-    exception,
-    status,
-  } = req.body;
+  const { status } = req.body;
 
   try {
     // Check the existencies.
@@ -211,15 +295,6 @@ export async function updateTask(req, res) {
         success: false,
         message: "Task not found.",
       });
-    }
-
-    if (assigneeId) {
-      if (assigneeId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "You are not allowed to update this task.",
-        });
-      }
     }
 
     // Check if the user is a member of the project.
@@ -237,49 +312,14 @@ export async function updateTask(req, res) {
       });
     }
 
-    const user = await User.findByPk(assigneeId);
-
-    // If the assignee is being changed, we set the started_date to null.
-    if (task.assigneeId != assigneeId) {
-      const started_date = null;
-      const diff = difficulty
-        ? parseInt(difficulty)
-        : parseInt(task.difficulty);
-      const predicted_work_hours = await predict(user.level, diff);
-
-      // Update the task
-      await task.update({
-        name,
-        description,
-        priority,
-        difficulty,
-        assigneeId,
-        projectId,
-        exception,
-        status: Status.TODO,
-        started_date,
-        predicted_work_hours: Math.round(predicted_work_hours),
-      });
-
-      return res.json({
-        success: true,
-        message: "Task updated successfully",
-        data: task,
-      });
-    }
-
     if (status != task.status) {
       // If the status is in progress, we set the started_date.
       if (status == Status.IN_PROGRESS) {
         const started_date = new Date();
 
-        const diff = difficulty
-          ? parseInt(difficulty)
-          : parseInt(task.difficulty);
-        const predicted_work_hours = await predict(user.level, diff);
         //8 hours of working each day from 9:00 to 18:00
-        const days = Math.floor(predicted_work_hours / 8);
-        const remainderHours = predicted_work_hours % 8;
+        const days = Math.floor(task.predicted_work_hours / 8);
+        const remainderHours = task.predicted_work_hours % 8;
 
         const currentDate = new Date();
 
@@ -291,18 +331,13 @@ export async function updateTask(req, res) {
           currentDate.setDate(currentDate.getDate() + 1);
           currentDate.setHours(currentDate.getHours() + remainderHours - 9);
         } else {
-          currentDate.setHours(currentDate.getHours() + predicted_work_hours);
+          currentDate.setHours(
+            currentDate.getHours() + task.predicted_work_hours
+          );
         }
 
         // Update the task
         await task.update({
-          name,
-          description,
-          priority,
-          difficulty,
-          assigneeId,
-          projectId,
-          exception,
           status,
           started_date,
           predicted_completion_date: currentDate.toISOString(),
@@ -318,13 +353,6 @@ export async function updateTask(req, res) {
         const predicted_completion_date = null;
         // Update the task
         await task.update({
-          name,
-          description,
-          priority,
-          difficulty,
-          assigneeId,
-          projectId,
-          exception,
           status,
           started_date,
           predicted_completion_date,
@@ -338,85 +366,8 @@ export async function updateTask(req, res) {
       }
     }
 
-    if (difficulty != task.difficulty) {
-      if (task.started_date != null) {
-        const diff = difficulty
-          ? parseInt(difficulty)
-          : parseInt(task.difficulty);
-
-        const predicted_work_hours = await predict(user.level, diff);
-        //8 hours of working each day from 9:00 to 18:00
-        const days = Math.floor(predicted_work_hours / 8);
-        const remainderHours = predicted_work_hours % 8;
-
-        const currentDate = task.started_date;
-
-        //add days to current date
-        currentDate.setDate(currentDate.getDate() + days);
-
-        //if remainder hours exceed 18:00 add one more day and remaining hours to 9:00
-        if (currentDate.getHours() + remainderHours > 18) {
-          currentDate.setDate(currentDate.getDate() + 1);
-          currentDate.setHours(currentDate.getHours() + remainderHours - 9);
-        } else {
-          currentDate.setHours(currentDate.getHours() + predicted_work_hours);
-        }
-
-        // Update the task
-        await task.update({
-          name,
-          description,
-          priority,
-          difficulty,
-          assigneeId,
-          projectId,
-          exception,
-          status,
-          predicted_work_hours: Math.round(predicted_work_hours),
-          predicted_completion_date: currentDate.toISOString(),
-        });
-
-        return res.json({
-          success: true,
-          message: "Task updated successfully",
-          data: task,
-        });
-      } else {
-        const diff = difficulty
-          ? parseInt(difficulty)
-          : parseInt(task.difficulty);
-        const predicted_work_hours = await predict(user.level, diff);
-
-        // Update the task
-        await task.update({
-          name,
-          description,
-          priority,
-          difficulty,
-          assigneeId,
-          projectId,
-          exception,
-          status,
-          predicted_work_hours: Math.round(predicted_work_hours),
-        });
-
-        return res.json({
-          success: true,
-          message: "Task updated successfully",
-          data: task,
-        });
-      }
-    }
-
     // Update the task
     await task.update({
-      name,
-      description,
-      priority,
-      difficulty,
-      assigneeId,
-      projectId,
-      exception,
       status,
     });
 
