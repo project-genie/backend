@@ -79,6 +79,28 @@ export async function getUsersTaskCandidates(req, res) {
   }
 }
 
+export async function getProjectTaskCandidates(req, res) {
+  const projectId = req.params["id"];
+  try {
+    const taskCandidates = await TaskCandidate.findAll({
+      where: {
+        projectId,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Task candidates found",
+      data: taskCandidates,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 /*
  * Create Task Candidate.
  * @param {Request} {name, description, projectId}

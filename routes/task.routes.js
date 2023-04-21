@@ -12,15 +12,19 @@ import {
   getGPTmessage,
   createTaskCandidate,
   getUsersTaskCandidates,
+  rejectTaskCandidate,
+  getProjectTaskCandidates,
 } from "../controllers/task.controller.js";
 
 const router = Router();
 
 // CRUD
 router.get("/candidate", getUsersTaskCandidates); // Get all candidate tasks of a user.
+
 router.post("/candidate", createTaskCandidate); // Create a new task.
+router.get("/candidate/:id/all", getProjectTaskCandidates);
 router.post("/candidate/:id/accept", acceptTaskCandidate); // Create a new task.
-router.post("/candidate/:id/reject", acceptTaskCandidate); // Create a new task.
+router.post("/candidate/:id/reject", rejectTaskCandidate); // Create a new task.
 
 router.get("/", getTasksCurrentUser); // Get all tasks of a user.
 
