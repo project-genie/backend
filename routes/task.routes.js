@@ -14,6 +14,7 @@ import {
   getUsersTaskCandidates,
   rejectTaskCandidate,
   getProjectTaskCandidates,
+  getOpenTasksProject,
 } from "../controllers/task.controller.js";
 
 const router = Router();
@@ -37,6 +38,8 @@ router.put("/:id", updateTaskStatus); // Update a task status.
 
 router.get("/project/completed/:id", getCompletedTasksProject); // Get all completed tasks of a project.
 router.get("/project/:id", getTasksProject); // Get all tasks of a project.
+router.get("/open/project/:id", getOpenTasksProject);
+
 router.get("/organization/:id/project/:id/user/:id", getTasksUser); // Get all tasks of a user.
 
 export default router;

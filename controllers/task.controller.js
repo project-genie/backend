@@ -552,6 +552,29 @@ export async function getTasksProject(req, res) {
   }
 }
 
+export async function getOpenTasksProject(req, res) {
+  try {
+    const tasks = await Task.findAll({
+      where: {
+        status: {
+          [Op.not]: Status.COMPLETED,
+        },
+      },
+      order: [["status", "DESC"]],
+    });
+    return res.json({
+      success: true,
+      message: "Tasks retrieved successfully",
+      data: tasks,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 /*
  * Get all tasks of the current user.
  * @param {Request} {user: {id}
