@@ -11,9 +11,15 @@ import {
   isOrganizationMember,
   isOrganizationOwner,
 } from "../utils/authorization.js";
+import { getProjectsOrganization } from "./project.controller.js";
 
 import { Project, ProjectMembers } from "../models/project.model.js";
-import { addProjectMember } from "./project.controller.js";
+import {
+  getCompletedTasksProject,
+  getOpenTasksProject,
+} from "./task.controller.js";
+import { CompletedTask, Status, Task } from "../models/task.model.js";
+import { Op } from "sequelize";
 
 /*
  * @param {Request} {body: {name, description}, user: {id}}
@@ -215,6 +221,59 @@ export async function getOrganizations(req, res) {
       success: true,
       message: "Organizations fetched successfully",
       data: organizations,
+    });
+  } catch (error) {
+    console.log("error: ", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function getNumberOfTasksProjects(req, res) {
+  const organizationId = req.params["id"];
+  const userId = req.user.id;
+  try {
+    if (!isOrganizationMember(organizationId, userId)) {
+      return res.status(403).json({
+        success: false,
+        message: "You are unauthorized to perform this action.",
+      });
+    }
+    const projects = await Project.findAll({
+      where: {
+        organizationId,
+      },
+    });
+
+    const numberOfTasks = [];
+    for (let i = 0; i < projects.length; i++) {
+      const completedTasks = await CompletedTask.findAll({
+        where: {
+          project_id: projects[i].id,
+        },
+      });
+      const openTasks = await Task.findAll({
+        where: {
+          projectId: projects[i].id,
+          status: {
+            [Op.not]: Status.COMPLETED,
+          },
+        },
+        order: [["status", "DESC"]],
+      });
+      numberOfTasks.push({
+        project: projects[i].name,
+        completedTasks: completedTasks.length,
+        openTasks: openTasks.length,
+      });
+    }
+    console.log(numberOfTasks);
+    return res.json({
+      success: true,
+      message: "Number of tasks fetched successfully",
+      data: numberOfTasks,
     });
   } catch (error) {
     console.log("error: ", error);

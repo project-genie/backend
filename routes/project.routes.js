@@ -13,6 +13,7 @@ import {
   getProjectsOrganizationCurrentUser,
   getPotentialMembers,
   getProject,
+  getNumberOfTasksProject,
 } from "../controllers/project.controller.js";
 
 const router = Router();
@@ -26,6 +27,8 @@ router.post("/:id/members", addProjectMember); // Add a member to a project.
 router.post("/:id/members/remove", removeProjectMember); // Remove a member from a project.
 
 router.get("/:id/nonmembers", getPotentialMembers); // Get all members of a project.
+
+router.get("/tasks/:id", getNumberOfTasksProject);
 
 router.get("/:id", getProject); // Get a project.
 router.delete("/:id", deleteProject); // Delete a project.

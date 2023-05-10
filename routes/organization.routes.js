@@ -15,6 +15,7 @@ import {
   getOrganizationInvites,
   removeInvitation,
   leaveOrganization,
+  getNumberOfTasksProjects,
 } from "../controllers/organization.controller.js";
 
 const router = Router();
@@ -24,6 +25,8 @@ router.post("/", createOrganization); // Create a new organization.
 
 router.get("/:id/members", getOrganizationMembers); // Get all members of an organization.
 router.post("/:id/leave", leaveOrganization); // Leave an organization.
+
+router.get("/projects/tasks/:id", getNumberOfTasksProjects);
 
 router.get("/:id", getOrganization); // Get an organization.
 router.delete("/:id", deleteOrganization); // Delete an organization.

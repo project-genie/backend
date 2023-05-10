@@ -10,6 +10,8 @@ import {
   isProjectMember,
   isProjectOwner,
 } from "../utils/authorization.js";
+import { CompletedTask, Status, Task } from "../models/task.model.js";
+import { Op } from "sequelize";
 
 /*
  * Create a project.
@@ -176,6 +178,50 @@ export async function updateProject(req, res) {
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function getNumberOfTasksProject(req, res) {
+  const projectId = req.params["id"];
+  try {
+    const project = await Project.findByPk(projectId);
+    const openTasks = await Task.findAll({
+      where: {
+        projectId,
+        status: {
+          [Op.not]: Status.COMPLETED,
+        },
+      },
+    });
+
+    const completedTasks = await CompletedTask.findAll({
+      where: {
+        project_id: projectId,
+      },
+    });
+
+    const tasksData = [];
+
+    tasksData.push({
+      name: "Open Tasks",
+      value: openTasks.length,
+    });
+
+    tasksData.push({
+      name: "Completed Tasks",
+      value: completedTasks.length,
+    });
+
+    return res.json({
+      success: true,
+      message: "Number of tasks fetched successfully",
+      data: tasksData,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

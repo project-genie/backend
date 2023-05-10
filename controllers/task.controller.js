@@ -553,9 +553,11 @@ export async function getTasksProject(req, res) {
 }
 
 export async function getOpenTasksProject(req, res) {
+  const projectId = req.params["id"];
   try {
     const tasks = await Task.findAll({
       where: {
+        projectId,
         status: {
           [Op.not]: Status.COMPLETED,
         },
