@@ -191,10 +191,17 @@ export async function updateUser(req, res) {
       });
     }
 
-    user.name = name;
+    if (name) user.name = name;
     if (level) {
+      if (level > 10 || level < 1) {
+        return res.status(400).send({
+          success: false,
+          message: "Level is not in appropiate interval.",
+        });
+      }
       user.level = level;
     }
+
     await user.save();
     return res.send({
       success: true,

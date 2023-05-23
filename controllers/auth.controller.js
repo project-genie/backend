@@ -123,7 +123,8 @@ export async function signUpCandidate(req, res) {
 
     sgMail
       .send(msg)
-      .then(() => {
+      .then((res) => {
+        console.log("Res: ", res);
         console.log("Email sent");
       })
       .catch((error) => {
