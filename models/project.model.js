@@ -2,6 +2,8 @@ import { DataTypes } from "sequelize";
 import { sequelize } from "../config/db.config.js";
 import { User } from "./user.model.js";
 import { Task } from "./task.model.js";
+import { Sprint } from "./sprint.model.js";
+import { Waterfall } from "./waterfall.model.js";
 
 // projects
 export const Project = sequelize.define(
@@ -23,6 +25,10 @@ export const Project = sequelize.define(
     description: {
       type: DataTypes.STRING,
       allowNull: { args: false, msg: "Please enter project description." },
+    },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: { args: false, msg: "Please enter project type." },
     },
   },
   {
@@ -64,6 +70,16 @@ Project.hasMany(ProjectMembers, {
 });
 
 Project.hasMany(Task, {
+  foreignkey: "projectId",
+  sourceKey: "id",
+});
+
+Project.hasMany(Sprint, {
+  foreignkey: "projectId",
+  sourceKey: "id",
+});
+
+Project.hasOne(Waterfall, {
   foreignkey: "projectId",
   sourceKey: "id",
 });

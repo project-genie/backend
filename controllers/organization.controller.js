@@ -11,13 +11,8 @@ import {
   isOrganizationMember,
   isOrganizationOwner,
 } from "../utils/authorization.js";
-import { getProjectsOrganization } from "./project.controller.js";
 
 import { Project, ProjectMembers } from "../models/project.model.js";
-import {
-  getCompletedTasksProject,
-  getOpenTasksProject,
-} from "./task.controller.js";
 import { CompletedTask, Status, Task } from "../models/task.model.js";
 import { Op } from "sequelize";
 

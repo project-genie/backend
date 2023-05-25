@@ -123,9 +123,8 @@ export async function signUpCandidate(req, res) {
 
     sgMail
       .send(msg)
-      .then((res) => {
-        console.log("Res: ", res);
-        console.log("Email sent");
+      .then(() => {
+        console.log("Email sent.");
       })
       .catch((error) => {
         console.error(error);
@@ -173,10 +172,10 @@ export async function createSession(req, res) {
   // create access token
   const accessToken = signJWT(
     { id: user.id, email: user.email, name: user.name, sessionId: session.id },
-    "15m"
+    "1h"
   );
 
-  const refreshToken = signJWT({ sessionId: session.id }, "1h");
+  const refreshToken = signJWT({ sessionId: session.id }, "6h");
 
   // set access token in cookie
   res.cookie("accessToken", accessToken, {

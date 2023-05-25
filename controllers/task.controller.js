@@ -492,6 +492,7 @@ export async function getTasksProject(req, res) {
   try {
     // Get the organization
     const project = await Project.findByPk(projectId);
+    console.log("Project fount: ", project);
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -529,7 +530,7 @@ export async function getTasksProject(req, res) {
         message: "You are not authorized to perform this action.",
       });
     }
-
+    console.log("before tasks");
     const tasks = await Task.findAll({
       where: {
         projectId,
@@ -539,6 +540,7 @@ export async function getTasksProject(req, res) {
       },
       order: [["status", "DESC"]],
     });
+    console.log("after tasks: ", tasks);
     return res.json({
       success: true,
       message: "Tasks retrieved successfully",

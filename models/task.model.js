@@ -37,6 +37,18 @@ export const TaskCandidate = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    type: {
+      type: DataTypes.STRING,
+    },
+    sprint: {
+      type: DataTypes.INTEGER,
+    },
+    sprint_requirement: {
+      type: DataTypes.INTEGER,
+    },
+    waterfall_requirement: {
+      type: DataTypes.INTEGER,
+    },
   },
   {
     timestamps: false,
@@ -101,6 +113,18 @@ export const Task = sequelize.define(
     approved_by: {
       type: DataTypes.INTEGER,
     },
+    type: {
+      type: DataTypes.STRING,
+    },
+    sprint: {
+      type: DataTypes.INTEGER,
+    },
+    sprint_requirement: {
+      type: DataTypes.INTEGER,
+    },
+    waterfall_requirement: {
+      type: DataTypes.INTEGER,
+    },
   },
   {
     timestamps: false,
@@ -146,6 +170,18 @@ export const CompletedTask = sequelize.define(
     exception: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+    },
+    type: {
+      type: DataTypes.STRING,
+    },
+    sprint: {
+      type: DataTypes.INTEGER,
+    },
+    sprint_requirement: {
+      type: DataTypes.INTEGER,
+    },
+    waterfall_requirement: {
+      type: DataTypes.INTEGER,
     },
   },
   {

@@ -34,7 +34,7 @@ export default async function deserializeUser(req, res, next) {
         name: user.name,
         sessionId: session.id,
       },
-      "15m"
+      "1h"
     );
 
     res.cookie("accessToken", newAccessToken, {
