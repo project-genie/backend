@@ -1,4 +1,4 @@
-import { CompletedTask, Task, TaskCandidate } from "../models/task.model.js";
+import { CompletedTask, Task } from "../models/task.model.js";
 import { Project, ProjectMembers } from "../models/project.model.js";
 import { User } from "../models/user.model.js";
 import {
@@ -55,43 +55,68 @@ export async function getTask(req, res) {
   }
 }
 
-export async function getUsersTaskCandidates(req, res) {
-  // Get the user id from the request.
+export async function createTask(req, res) {
+  const {
+    name,
+    description,
+    priority,
+    difficulty,
+    projectId,
+    assigneeId,
+    sprintId,
+    sprintRequirementId,
+  } = req.body;
   const userId = req.user.id;
-
   try {
-    const taskCandidates = await TaskCandidate.findAll({
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const projectMember = await ProjectMembers.findOne({
       where: {
-        assigneeId: userId,
+        projectId: projectId,
+        userId: userId,
       },
+    });
+
+    if (projectMember.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not the owner of this project",
+      });
+    }
+
+    const assignee = await User.findByPk(assigneeId);
+    if (!assignee) {
+      return res.status(404).json({
+        success: false,
+        message: "Assignee not found",
+      });
+    }
+
+    const prediction = await predict(assignee.level, difficulty);
+
+    const task = await Task.create({
+      name: name,
+      description: description,
+      projectId: projectId,
+      assigneeId: assigneeId,
+      priority: priority,
+      difficulty: difficulty,
+      sprint: sprintId,
+      sprint_requirement: sprintRequirementId,
+      createdBy: userId,
+      predicted_work_hours: parseInt(prediction),
     });
 
     return res.json({
       success: true,
-      message: "Task candidates found",
-      data: taskCandidates,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-}
-
-export async function getProjectTaskCandidates(req, res) {
-  const projectId = req.params["id"];
-  try {
-    const taskCandidates = await TaskCandidate.findAll({
-      where: {
-        projectId,
-      },
-    });
-
-    return res.json({
-      success: true,
-      message: "Task candidates found",
-      data: taskCandidates,
+      message: "Task created",
+      data: task,
     });
   } catch (error) {
     return res.status(500).json({
@@ -101,29 +126,15 @@ export async function getProjectTaskCandidates(req, res) {
   }
 }
 
-/*
- * Create Task Candidate.
- * @param {Request} {name, description, projectId}
- * @param {Response} {success, message, data}
- * @returns {Promise<Response>}
- * Only the project members can create tasks.
- */
-export async function createTaskCandidate(req, res) {
-  // Get the parameters from the request body.
-  const { projectId, name, description } = req.body;
-  // Get the user id from the request.
+export async function updateTask(req, res) {
+  const { name, description, priority, difficulty, projectId, assigneeId } =
+    req.body;
   const userId = req.user.id;
-  try {
-    // Check if the user is a member of the project.
-    if (!isProjectMember(projectId, userId)) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not a member of this project",
-      });
-    }
+  const taskId = req.params["id"];
 
-    // Check if project or user exists.
+  try {
     const project = await Project.findByPk(projectId);
+
     if (!project) {
       return res.status(404).json({
         success: false,
@@ -131,118 +142,53 @@ export async function createTaskCandidate(req, res) {
       });
     }
 
-    // const predicted_work_hours = await predict(
-    //   user.level,
-    //   parseInt(difficulty)
-    // );
-    // Create the task.
-    const newTaskCandidate = await TaskCandidate.create({
-      name,
-      description,
-      projectId,
-      assigneeId: userId,
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        projectId: projectId,
+        userId: userId,
+      },
     });
 
-    return res.json({
-      success: true,
-      message: "Task candidate created successfully.",
-      data: newTaskCandidate,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-}
-
-/*
- * Accept Task.
- * @param {Request} {taskCandidateId, difficulty, priority}
- * @param {Response} {success, message, data}
- * @returns {Promise<Response>}
- * Only the project members can create tasks.
- * */
-export async function acceptTaskCandidate(req, res) {
-  // Get the parameters from the request body.
-  const { difficulty, priority } = req.body;
-  const taskCandidateId = req.params["id"];
-  // Get the user id from the request.
-  const userId = req.user.id;
-  try {
-    const taskCandidate = await TaskCandidate.findByPk(taskCandidateId);
-    // Check if the user is a member of the project.
-    if (!isProjectOwner(taskCandidate.projectId, userId)) {
+    if (projectMember.role !== "owner") {
       return res.status(403).json({
         success: false,
-        message: "You are not an owner of this project",
+        message: "You are not the owner of this project",
       });
     }
 
-    // Check if project or user exists.
-    const project = await Project.findByPk(taskCandidate.projectId);
-    if (!project) {
+    const task = await Task.findByPk(taskId);
+
+    if (!task) {
       return res.status(404).json({
         success: false,
-        message: "Project not found",
+        message: "Task not found",
       });
     }
-
-    const assignee = await User.findByPk(taskCandidate.assigneeId);
-
-    const predicted_work_hours = await predict(
-      assignee.level,
-      parseInt(difficulty)
-    );
-    const newTask = await Task.create({
-      name: taskCandidate.name,
-      description: taskCandidate.description,
-      projectId: taskCandidate.projectId,
-      assigneeId: taskCandidate.assigneeId,
-      difficulty,
-      priority,
-      predicted_work_hours: parseInt(predicted_work_hours),
-      approved_by: userId,
-    });
-
-    await taskCandidate.destroy();
-
-    return res.status(200).json({
-      success: true,
-      message: "Task created successfully.",
-      data: newTask,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-}
-
-export async function rejectTaskCandidate(req, res) {
-  // Get the parameters from the request body.
-  const { taskCandidateId } = req.body;
-  // Get the user id from the request.
-  const userId = req.user.id;
-  try {
-    const taskCandidate = await TaskCandidate.findByPk(taskCandidateId);
-    // Check if the user is a member of the project.
-    if (!isProjectOwner(taskCandidate.projectId, userId)) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not an owner of this project",
-      });
+    if (name) {
+      task.name = name;
+    }
+    if (description) {
+      task.description = description;
+    }
+    if (priority) {
+      task.priority = priority;
+    }
+    if (difficulty) {
+      task.difficulty = difficulty;
+    }
+    if (assigneeId) {
+      task.assigneeId = assigneeId;
     }
 
-    await taskCandidate.destroy();
+    await task.save();
 
     return res.json({
       success: true,
-      message: "Task candidate rejected successfully.",
+      message: "Task updated.",
+      data: task,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -324,6 +270,13 @@ export async function updateTaskStatus(req, res) {
       return res.status(403).json({
         success: false,
         message: "You are not a member of this project.",
+      });
+    }
+
+    if (task.assigneeId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not the assignee of this task.",
       });
     }
 
@@ -530,7 +483,6 @@ export async function getTasksProject(req, res) {
         message: "You are not authorized to perform this action.",
       });
     }
-    console.log("before tasks");
     const tasks = await Task.findAll({
       where: {
         projectId,
@@ -540,7 +492,6 @@ export async function getTasksProject(req, res) {
       },
       order: [["status", "DESC"]],
     });
-    console.log("after tasks: ", tasks);
     return res.json({
       success: true,
       message: "Tasks retrieved successfully",

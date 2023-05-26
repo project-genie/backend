@@ -9,7 +9,9 @@ import authRoutes from "./routes/auth.routes.js";
 import organizationRoutes from "./routes/organization.routes.js";
 import projectRoutes from "./routes/project.routes.js";
 import taskRoutes from "./routes/task.routes.js";
+import sprintRoutes from "./routes/sprint.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import waterfallRoutes from "./routes/waterfall.routes.js";
 
 const app = express();
 
@@ -41,6 +43,9 @@ app.use(deserializeUser);
 app.use("/api/users", requireUser, userRoutes);
 app.use("/api/organizations", requireUser, organizationRoutes);
 app.use("/api/projects", requireUser, projectRoutes);
+app.use("/api/sprints", requireUser, sprintRoutes);
+app.use("/api/waterfalls", requireUser, waterfallRoutes);
+
 app.use("/api/tasks", requireUser, taskRoutes);
 
 export default app;

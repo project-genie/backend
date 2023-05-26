@@ -51,9 +51,6 @@ export const SprintRequirements = sequelize.define("sprint_requirements", {
     type: DataTypes.STRING,
     allowNull: { args: false, msg: "Please enter requirement description." },
   },
-  status: {
-    type: DataTypes.STRING,
-  },
 });
 
 Sprint.hasMany(SprintRequirements, {

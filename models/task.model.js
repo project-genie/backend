@@ -11,51 +11,6 @@ export const Status = {
 };
 
 // tasks
-export const TaskCandidate = sequelize.define(
-  "task_candidates",
-  {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
-    projectId: {
-      type: DataTypes.INTEGER,
-      allowNull: { args: false, msg: "Please enter project id." },
-    },
-    assigneeId: {
-      type: DataTypes.INTEGER,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: { args: false, msg: "Please enter task name." },
-    },
-    description: {
-      type: DataTypes.STRING,
-    },
-    created_date: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-    type: {
-      type: DataTypes.STRING,
-    },
-    sprint: {
-      type: DataTypes.INTEGER,
-    },
-    sprint_requirement: {
-      type: DataTypes.INTEGER,
-    },
-    waterfall_requirement: {
-      type: DataTypes.INTEGER,
-    },
-  },
-  {
-    timestamps: false,
-  }
-);
-
-// tasks
 export const Task = sequelize.define(
   "tasks",
   {
@@ -109,12 +64,6 @@ export const Task = sequelize.define(
     },
     predicted_work_hours: {
       type: DataTypes.INTEGER,
-    },
-    approved_by: {
-      type: DataTypes.INTEGER,
-    },
-    type: {
-      type: DataTypes.STRING,
     },
     sprint: {
       type: DataTypes.INTEGER,
@@ -188,11 +137,6 @@ export const CompletedTask = sequelize.define(
     timestamps: false,
   }
 );
-
-TaskCandidate.belongsTo(User, {
-  foreignKey: "assigneeId",
-  targetKey: "id",
-});
 
 // Relationships
 Task.belongsTo(User, {
