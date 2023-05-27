@@ -1,4 +1,4 @@
-import { CompletedTask, Task } from "../models/task.model.js";
+import { Task } from "../models/task.model.js";
 import { Project, ProjectMembers } from "../models/project.model.js";
 import { User } from "../models/user.model.js";
 import {
@@ -398,21 +398,6 @@ export async function completeTask(req, res) {
       });
     }
 
-    const user = await User.findByPk(task.assigneeId);
-    // Update the task
-    const completedTask = await CompletedTask.create({
-      task_id: taskId,
-      user_id: userId,
-      project_id: task.projectId,
-      started_date: task.started_date,
-      completed_date: new Date(),
-      hours: diffInHours,
-      exception: task.exception,
-      user_level: user.level,
-      difficulty: task.difficulty,
-    });
-
-    // Destroy the task
     await task.update({
       status: Status.COMPLETED,
     });
@@ -420,7 +405,7 @@ export async function completeTask(req, res) {
     return res.json({
       success: true,
       message: "Task completed successfully",
-      data: completedTask,
+      data: task,
     });
   } catch (error) {
     res.status(500).json({
@@ -653,9 +638,12 @@ export async function getCompletedTasksProject(req, res) {
       });
     }
 
-    const tasks = await CompletedTask.findAll({
+    const tasks = await Task.findAll({
       where: {
         project_id: projectId,
+        status: {
+          [Op.eq]: Status.COMPLETED,
+        },
       },
     });
     return res.json({
@@ -712,6 +700,70 @@ export async function getGPTmessage(req, res) {
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function getTasksSprint(req, res) {
+  const sprintId = req.params["id"];
+  const userId = req.user.id;
+
+  try {
+    const sprint = await Sprint.findByPk(sprintId);
+
+    if (!sprint) {
+      return res.status(404).json({
+        success: false,
+        message: "Sprint not found",
+      });
+    }
+
+    const project = await Project.findByPk(sprint.projectId);
+
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const tasks = await Task.findAll({
+      where: {
+        sprintId: sprintId,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Tasks retrieved successfully",
+      data: tasks,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function getTasksSprintRequirement(req, res) {
+  const sprintRequirementId = req.params["id"];
+  try {
+    const tasks = await Task.findAll({
+      where: {
+        sprint_requirement: sprintRequirementId,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Tasks retrieved successfully",
+      data: tasks,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

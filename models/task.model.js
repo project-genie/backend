@@ -80,64 +80,6 @@ export const Task = sequelize.define(
   }
 );
 
-export const CompletedTask = sequelize.define(
-  "completed_tasks",
-  {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
-    task_id: {
-      type: DataTypes.INTEGER,
-      allowNull: { args: false, msg: "Please enter task id." },
-    },
-    user_id: {
-      type: DataTypes.INTEGER,
-      allowNull: { args: false, msg: "Please enter completed by." },
-    },
-    project_id: {
-      type: DataTypes.INTEGER,
-      allowNull: { args: false, msg: "Please enter project id." },
-    },
-    started_date: {
-      type: DataTypes.DATE,
-    },
-    completed_date: {
-      type: DataTypes.DATE,
-    },
-    hours: {
-      type: DataTypes.INTEGER,
-    },
-    user_level: {
-      type: DataTypes.INTEGER,
-    },
-    task_difficulty: {
-      type: DataTypes.INTEGER,
-      allowNull: { args: false, msg: "Please enter task difficulty." },
-    },
-    exception: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    type: {
-      type: DataTypes.STRING,
-    },
-    sprint: {
-      type: DataTypes.INTEGER,
-    },
-    sprint_requirement: {
-      type: DataTypes.INTEGER,
-    },
-    waterfall_requirement: {
-      type: DataTypes.INTEGER,
-    },
-  },
-  {
-    timestamps: false,
-  }
-);
-
 // Relationships
 Task.belongsTo(User, {
   foreignKey: "assigneeId",
@@ -146,15 +88,5 @@ Task.belongsTo(User, {
 
 Task.belongsTo(User, {
   foreignKey: "createdBy",
-  targetKey: "id",
-});
-
-CompletedTask.belongsTo(User, {
-  foreignKey: "user_id",
-  targetKey: "id",
-});
-
-CompletedTask.belongsTo(Task, {
-  foreignKey: "task_id",
   targetKey: "id",
 });

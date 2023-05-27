@@ -12,6 +12,8 @@ import {
   getOpenTasksProject,
   createTask,
   updateTask,
+  getTasksSprint,
+  getTasksSprintRequirement,
 } from "../controllers/task.controller.js";
 
 const router = Router();
@@ -33,5 +35,8 @@ router.get("/project/:id", getTasksProject); // Get all tasks of a project.
 router.get("/open/project/:id", getOpenTasksProject);
 
 router.get("/organization/:id/project/:id/user/:id", getTasksUser); // Get all tasks of a user.
+
+router.get("/sprint/:id", getTasksSprint); // Get all tasks of a sprint.
+router.get("/sprintrequirement/:id", getTasksSprintRequirement); // Get all tasks of a sprint requirement.
 
 export default router;

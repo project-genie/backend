@@ -6,9 +6,9 @@ import {
   deleteSprintRequirement,
   endSprint,
   getSprint,
+  getSprintRequirement,
   getSprintRequirements,
   getSprints,
-  startSprint,
   updateSprint,
   updateSprintRequirement,
 } from "../controllers/sprint.controller.js";
@@ -22,6 +22,7 @@ router.delete("/delete/:id", deleteSprint); // Delete a sprint.
 router.put("/update/:id", updateSprint); // Update a sprint.
 router.post("/end/:id", endSprint); // End a sprint.
 
+router.get("/requirement/:id", getSprintRequirement); // Get one sprint requirement of a sprint.
 router.get("/requirements/:id", getSprintRequirements); // Get all sprint requirements of a sprint.
 router.post("/requirements/create/:id", createSprintRequirement); // Create a new sprint requirement.
 router.delete("/requirements/delete/:id", deleteSprintRequirement); // Delete a sprint requirement.

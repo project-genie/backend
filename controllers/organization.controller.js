@@ -13,7 +13,7 @@ import {
 } from "../utils/authorization.js";
 
 import { Project, ProjectMembers } from "../models/project.model.js";
-import { CompletedTask, Status, Task } from "../models/task.model.js";
+import { Status, Task } from "../models/task.model.js";
 import { Op } from "sequelize";
 
 /*
@@ -244,9 +244,12 @@ export async function getNumberOfTasksProjects(req, res) {
 
     const numberOfTasks = [];
     for (let i = 0; i < projects.length; i++) {
-      const completedTasks = await CompletedTask.findAll({
+      const completedTasks = await Task.findAll({
         where: {
           project_id: projects[i].id,
+          status: {
+            [Op.eq]: Status.COMPLETED,
+          },
         },
       });
       const openTasks = await Task.findAll({

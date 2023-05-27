@@ -478,12 +478,21 @@ export async function createSprintRequirement(req, res) {
 }
 
 export async function deleteSprintRequirement(req, res) {
-  const sprintId = req.params["id"];
+  const sprintRequirementId = req.params["id"];
   const userId = req.user.id;
   try {
-    const sprint = await Sprint.findByPk(sprintId, {
+    const sprintRequirement = await SprintRequirements.findByPk(
+      sprintRequirementId,
+      {
+        where: {
+          id: sprintRequirementId,
+        },
+      }
+    );
+
+    const sprint = await Sprint.findByPk(sprintRequirement.sprintId, {
       where: {
-        id: sprintId,
+        id: sprintRequirement.sprintId,
       },
     });
 
@@ -508,16 +517,11 @@ export async function deleteSprintRequirement(req, res) {
       });
     }
 
-    const requirement = await SprintRequirements.destroy({
-      where: {
-        sprintId: sprintId,
-      },
-    });
+    await sprintRequirement.destroy();
 
     return res.send({
       success: true,
       message: "Requirement deleted successfully.",
-      data: requirement,
     });
   } catch (error) {
     return res.status(500).send({
@@ -582,6 +586,53 @@ export async function updateSprintRequirement(req, res) {
       success: false,
       message:
         error.message || "Some error occurred while updating requirement.",
+    });
+  }
+}
+
+export async function getSprintRequirement(req, res) {
+  const sprintRequirementId = req.params["id"];
+  const userId = req.user.id;
+  try {
+    const sprintRequirement = await SprintRequirements.findByPk(
+      sprintRequirementId,
+      {
+        where: {
+          id: sprintRequirementId,
+        },
+      }
+    );
+
+    const sprint = await Sprint.findByPk(sprintRequirement.sprintId, {
+      where: {
+        id: sprintRequirement.sprintId,
+      },
+    });
+
+    const projectMember = await ProjectMembers.findOne({
+      where: {
+        projectId: sprint.projectId,
+        userId: userId,
+      },
+    });
+
+    if (projectMember.role !== "owner") {
+      return res.status(403).send({
+        success: false,
+        message: "You are not allowed to retrieve requirement.",
+      });
+    }
+
+    return res.send({
+      success: true,
+      message: "Sprint requirement retrieved successfully.",
+      data: sprintRequirement,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message:
+        error.message || "Some error occurred while retrieving requirement.",
     });
   }
 }

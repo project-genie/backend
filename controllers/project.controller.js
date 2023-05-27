@@ -10,7 +10,7 @@ import {
   isProjectMember,
   isProjectOwner,
 } from "../utils/authorization.js";
-import { CompletedTask, Status, Task } from "../models/task.model.js";
+import { Status, Task } from "../models/task.model.js";
 import { Op } from "sequelize";
 import { Waterfall } from "../models/waterfall.model.js";
 
@@ -212,9 +212,12 @@ export async function getNumberOfTasksProject(req, res) {
       },
     });
 
-    const completedTasks = await CompletedTask.findAll({
+    const completedTasks = await Task.findAll({
       where: {
         project_id: projectId,
+        status: {
+          [Op.eq]: Status.COMPLETED,
+        },
       },
     });
 
